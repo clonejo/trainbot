@@ -34,5 +34,8 @@ export default ({ mode }) => {
         },
       },
     },
+    build: {
+        //minify: false
+    },
   })
 }
