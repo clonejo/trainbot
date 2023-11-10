@@ -62,7 +62,7 @@ func (c *config) getRect() image.Rectangle {
 
 const (
 	rectSizeMin = 100
-	rectSizeMax = 500
+	rectSizeMax = 1000
 
 	failedFramesMax = 50
 
