@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	maxMemoryMB = 1024 * 1024 * 50
+	maxMemoryMB = 1024 * 1024 * 50 * 10
 )
 
 func isign(x int) int {
