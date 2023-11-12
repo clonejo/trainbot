@@ -16,6 +16,7 @@ const (
 	goodCosScoreNoMove = 0.99
 	goodCosScoreMove   = 0.925
 	minFramePeriodS    = 0.01
+	maxFramePeriodS    = 10.0
 	dxLowPassFactor    = 0.95
 	minContrastAvg     = 0.005
 	minContrastAvgDev  = 0.01
@@ -248,19 +249,30 @@ func (r *AutoStitcher) Frame(frameColor image.Image, ts time.Time) *Train {
 		return nil
 	}
 
+	isActive := len(r.seq.dx) > 0
+
 	// Check for minimal contrast and brightness.
 	avg, avgDev := avg.RGBAC(frameRGBA)
 	prometheus.RecordBrightnessContrast(sum3(avg)/3, sum3(avgDev)/3)
 	if sum3(avg)/3 < minContrastAvg || sum3(avgDev)/3 < minContrastAvgDev {
 		log.Trace().Interface("avgDev", avgDev).Interface("avg", avg).Msg("contrast too low, discarding")
 		prometheus.RecordFrameDisposition("low_contrast")
+
+		// Bail out when there is too much of a jump in time, eg. because frames were skipped
+		if isActive {
+			prevReceivedFramePeriodS := ts.Sub(r.seq.ts[len(r.seq.ts)-1]).Seconds()
+			if prevReceivedFramePeriodS > maxFramePeriodS {
+				log.Warn().Float64("prevReceivedFramePeriodS", prevReceivedFramePeriodS).Msg("got low contrast frames for too long")
+				return r.TryStitchAndReset()
+			}
+		}
+
 		return nil
 	}
 
 	dx, cos := findOffset(r.prevFrameRGBA, frameRGBA, maxDx)
 	log.Debug().Uint64("prevFrameIx", r.prevFrameIx).Int("dx", dx).Float64("cos", cos).Msg("received frame")
 
-	isActive := len(r.seq.dx) > 0
 	if isActive {
 		r.dxAbsLowPass = r.dxAbsLowPass*(dxLowPassFactor) + math.Abs(float64(dx))*(1-dxLowPassFactor)
 
