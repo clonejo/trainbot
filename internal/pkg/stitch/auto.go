@@ -239,8 +239,11 @@ func (r *AutoStitcher) Frame(frameColor image.Image, ts time.Time) *Train {
 
 	// Sanity check.
 	if frameRGBA.Rect.Dx() < maxDx*3 {
+		// FIXME: this condition is purely a result of the command line/env parameters, right?
+		// FIXME: so it should be checked in the beginning and then abort the program?
+		// FIXME: or maybe abort right here?
 		log.Error().Int("dx", frameRGBA.Rect.Dx()).Int("maxDx*3", maxDx*3).Float64("framePeriodS", framePeriodS).Msg("image is not wide enough to resolve the given max speed")
-		return nil
+		panic("Image is not wide enough to resolve the given max speed. Pick higher width or lower max speed, or readjust PX_PER_M.")
 	}
 
 	// Check for minimal contrast and brightness. TODO: Maybe do directly on RGBA image.
