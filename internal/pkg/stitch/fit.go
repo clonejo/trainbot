@@ -70,7 +70,7 @@ func fitDx(seq sequence, maxSpeedPxS float64) ([]int, float64, float64, float64,
 		roundErr += dxF - dxRound
 
 		if math.Abs(roundErr) >= 0.5 {
-			dxRound += roundErr
+			dxRound += sign(roundErr)
 			roundErr -= sign(roundErr)
 		}
 
