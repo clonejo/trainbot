@@ -112,6 +112,7 @@ func runTestDetailed(t *testing.T, c Config, r image.Rectangle, video string, tr
 	assert.InDelta(t, accel, train.AccelMpS2(), 0.1, "acceleration does not match: %s", video)
 	assert.True(t, train.Direction() == direction, "direction does not match: %s", video)
 
+	imutil.Dump(truthImg+".generated.jpg", train.Image)
 	// Check stitched image.
 	truth, err := imutil.Load(truthImg)
 	require.NoError(t, err)
