@@ -16,6 +16,7 @@ const (
 	goodScoreMove     = 0.925
 	maxSeqLen         = 1500
 	minFramePeriodS   = 0.01
+	maxFramePeriodS   = 10.0
 	dxLowPassFactor   = 0.95
 	minContrastAvg    = 0.005
 	minContrastAvgDev = 0.01
@@ -246,17 +247,28 @@ func (r *AutoStitcher) Frame(frameColor image.Image, ts time.Time) *Train {
 		panic("Image is not wide enough to resolve the given max speed. Pick higher width or lower max speed, or readjust PX_PER_M.")
 	}
 
+	isActive := len(r.seq.dx) > 0
+
 	// Check for minimal contrast and brightness. TODO: Maybe do directly on RGBA image.
 	avg, avgDev := avg.RGBA(frameRGBA)
 	if sum3(avg)/3 < minContrastAvg || sum3(avgDev)/3 < minContrastAvgDev {
 		log.Trace().Interface("avgDev", avgDev).Interface("avg", avg).Msg("contrast too low, discarding")
+
+		// Bail out when there is too much of a jump in time, eg. because frames were skipped
+		if isActive {
+			prevReceivedFramePeriodS := ts.Sub(r.seq.ts[len(r.seq.ts)-1]).Seconds()
+			if prevReceivedFramePeriodS > maxFramePeriodS {
+				log.Warn().Float64("prevReceivedFramePeriodS", prevReceivedFramePeriodS).Msg("got low contrast frames for too long")
+				return r.TryStitchAndReset()
+			}
+		}
+
 		return nil
 	}
 
 	dx, score := findOffset(r.prevFrameRGBA, frameRGBA, maxDx)
 	log.Debug().Uint64("prevFrameIx", r.prevFrameIx).Int("dx", dx).Float64("score", score).Msg("received frame")
 
-	isActive := len(r.seq.dx) > 0
 	if isActive {
 		r.dxAbsLowPass = r.dxAbsLowPass*(dxLowPassFactor) + math.Abs(float64(dx))*(1-dxLowPassFactor)
 
