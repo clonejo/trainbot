@@ -183,3 +183,21 @@ Note that the mounting plate for the Raspberry Pi is 1-2mm too wide, because the
 - [ ] Better deployment setup (at least a systemd unit)
 - [ ] Add run/deploy instructions to README (including confighelper)
 - [ ] Maybe compress URL params - favorites list is getting longer and longer...
+- [ ] Overlay moved train parts instead of stitching. Effectively we would use
+      more light for the same bit of train. Also, obstructions would matter
+      less, as they would even out over several exposures. Maybe we need
+      movement data more precise than int, and a more complex movement model
+      than linear for this. Use enblend/enfuse?
+- [ ] Easy interactive crop rectangle selection.
+- [ ] Fix ICEs and freight trains.
+- [ ] detect UIC waggon numbers? at this point, we'll have to obscure faces :/
+- [ ] AV1 encoding for the video clips
+- [ ] What is the impact of the crop rect on movement detection? Only a certain
+      portion of the rect is anaylised, right?
+- [ ] MRQ suggested more efficient movement detection using fourrier analysis
+- [ ] look at more properties than just contrast for picking good frames (eg.
+      blur detection using FFT)
+- [ ] Keep some raw video footage around for re-processing or creating test cases
+- [ ] Mastodon bot that posts a popular (full jpg views?) train every day.
+      Maybe just post the most viewed train that was not yet posted. 20:00
+      local time should be good.
