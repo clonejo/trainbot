@@ -34,18 +34,34 @@ func fitDx(seq sequence, maxSpeedPxS float64) ([]int, float64, float64, float64,
 
 	// Prepare data for fitting.
 	n := len(seq.dx)
-	dt := make([]float64, n) // Time since last data point [s].
-	t := make([]float64, n)  // Time since start [s].
-	v := make([]float64, n)  // Current velocity [px/s].
+	dt := make([]float64, n)         // Time since last data point [s].
+	dtComplete := make([]float64, n) // Time since last data point [s].
+	t := make([]float64, n)          // Time since start [s].
+	tComplete := make([]float64, n)  // Time since start [s].
+	v := make([]float64, n)          // Current velocity [px/s].
+	ignored := 0
 	for i := range seq.dx {
 		if i == 0 {
-			dt[i] = seq.ts[i].Sub(*seq.startTS).Seconds()
+			dtComplete[i] = seq.ts[i].Sub(*seq.startTS).Seconds()
 		} else {
-			dt[i] = seq.ts[i].Sub(seq.ts[i-1]).Seconds()
+			dtComplete[i] = seq.ts[i].Sub(seq.ts[i-1]).Seconds()
 		}
-		t[i] = seq.ts[i].Sub(*seq.startTS).Seconds()
-		v[i] = float64(seq.dx[i]) / dt[i]
+		if seq.dx[i] == 0 {
+			ignored += 1
+			continue
+		}
+		if i == 0 {
+			dt[i-ignored] = seq.ts[i].Sub(*seq.startTS).Seconds()
+		} else {
+			dt[i-ignored] = seq.ts[i].Sub(seq.ts[i-1]).Seconds()
+		}
+		t[i-ignored] = seq.ts[i].Sub(*seq.startTS).Seconds()
+		tComplete[i] = seq.ts[i].Sub(*seq.startTS).Seconds()
+		v[i-ignored] = float64(seq.dx[i]) / dt[i-ignored]
 	}
+	dt = dt[0 : len(dt)-ignored]
+	t = t[0 : len(t)-ignored]
+	v = v[0 : len(v)-ignored]
 
 	// Fit.
 	params := ransac.MetaParams{
@@ -55,7 +71,7 @@ func fitDx(seq sequence, maxSpeedPxS float64) ([]int, float64, float64, float64,
 		InlierThreshold: maxSpeedPxS * 0.05, // 5% of max speed.
 		Seed:            0,
 	}
-	log.Debug().Floats64("t", t).Floats64("v", v).Ints("dx", seq.dx).Interface("params", params).Msg("RANSAC")
+	log.Debug().Floats64("t", t).Floats64("v", v).Interface("params", params).Msg("RANSAC")
 	fit, err := ransac.Ransac(t, v, model, modelNParams, params)
 	if err != nil {
 		return nil, 0, 0, 0, err
@@ -65,7 +81,7 @@ func fitDx(seq sequence, maxSpeedPxS float64) ([]int, float64, float64, float64,
 	dxFit := make([]int, n)
 	var roundErr float64 // Sum of values we have rounded away.
 	for i := range seq.dx {
-		dxF := model(t[i], fit.X) * dt[i]
+		dxF := model(tComplete[i], fit.X) * dtComplete[i]
 		dxRound := math.Round(dxF)
 		roundErr += dxF - dxRound
 
