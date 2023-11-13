@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"image"
 	"io/fs"
-	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -214,6 +213,10 @@ func processTrains(store upload.DataStore, dbx *sqlx.DB, trainsIn <-chan *stitch
 
 		tsString := train.StartTS.Format("20060102_150405.999_Z07:00")
 
+		// reduce resolution to avoid JPEG/browser limits
+		max_jpg_dimension := uint(1<<15 - 1)
+		train.Image = resize.Thumbnail(max_jpg_dimension, max_jpg_dimension, train.Image, resize.Bilinear).(*image.RGBA)
+
 		// Dump stitched image.
 		imgFileName := fmt.Sprintf("train_%s.jpg", tsString)
 		err := imutil.Dump(store.GetBlobPath(imgFileName), train.Image)
@@ -224,7 +227,7 @@ func processTrains(store upload.DataStore, dbx *sqlx.DB, trainsIn <-chan *stitch
 		log.Debug().Str("imgFileName", imgFileName).Msg("wrote JPEG")
 
 		// Dump thumbnail.
-		thumb := resize.Thumbnail(math.MaxUint, 64, train.Image, resize.Bilinear)
+		thumb := resize.Thumbnail(max_jpg_dimension, 64, train.Image, resize.Bilinear)
 		err = imutil.DumpJPEG(store.GetBlobThumbPath(imgFileName), thumb, 75)
 		if err != nil {
 			log.Err(err).Send()
