@@ -9,7 +9,6 @@ import (
 	"image"
 	"image/png"
 	"io/fs"
-	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -242,6 +241,10 @@ func processTrains(store upload.DataStore, dbx *sqlx.DB, trainsIn <-chan *stitch
 			Str("direction", train.DirectionS()).
 			Msg("found train")
 
+		// reduce resolution to avoid JPEG/browser limits
+		maxJpgDimension := uint(1<<15 - 1)
+		train.Image = resize.Thumbnail(maxJpgDimension, maxJpgDimension, train.Image, resize.Bilinear).(*image.RGBA)
+
 		// Dump stitched image.
 		dbTrain := db.Train{StartTS: train.StartTS}
 		err := imutil.Dump(store.GetBlobPath(dbTrain.ImgFileName()), train.Image)
@@ -252,7 +255,7 @@ func processTrains(store upload.DataStore, dbx *sqlx.DB, trainsIn <-chan *stitch
 		log.Debug().Str("imgFileName", dbTrain.ImgFileName()).Msg("wrote JPEG")
 
 		// Dump thumbnail.
-		thumb := resize.Thumbnail(math.MaxUint, 64, train.Image, resize.Bilinear)
+		thumb := resize.Thumbnail(maxJpgDimension, 64, train.Image, resize.Bilinear)
 		err = imutil.DumpJPEG(store.GetBlobThumbPath(dbTrain.ImgFileName()), thumb, 75)
 		if err != nil {
 			log.Err(err).Send()
