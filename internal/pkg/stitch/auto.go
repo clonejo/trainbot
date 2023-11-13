@@ -17,7 +17,7 @@ const (
 	goodCosScoreMove   = 0.925
 	minFramePeriodS    = 0.01
 	maxFramePeriodS    = 10.0
-	dxLowPassFactor    = 0.95
+	dxLowPassFactor    = 0.99
 	minContrastAvg     = 0.005
 	minContrastAvgDev  = 0.01
 )
