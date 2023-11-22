@@ -124,7 +124,7 @@ deploy_trainbot: docker_build
 	test -n "$(host)" # missing target host, usage: make deploy_trainbot host=TRAINBOT_DEPLOY_TARGET_SSH_HOST !
 
 	ssh $(host) mkdir -p trainbot/
-	rsync env $(host):trainbot/
+	rsync env mask.png $(host):trainbot/
 
 	ssh $(host) mkdir -p .config/systemd/user/
 	rsync trainbot.service $(host):.config/systemd/user/
@@ -142,6 +142,12 @@ deploy_confighelper: docker_build
 	test -n "$(host)" # missing target host, usage: make deploy_confighelper host=TRAINBOT_DEPLOY_TARGET_SSH_HOST !
 	ssh $(host) mkdir -p trainbot/
 	rsync build/confighelper-arm64 $(host):trainbot/
+
+record_pi:
+	# command pulled from trainbot log output:
+	ssh $(host) \
+		libcamera-vid "--verbose=1" "--timeout=0" "--inline" "--nopreview" "--width" "786" "--height" "528" "--roi" "0.116371 0.121622 0.775148 0.713514" "--mode=2028:1520:12:P" "--framerate" "40" "--autofocus-mode=manual" "--lens-position=0.000000" "--output" "-" "--codec=mjpeg" "--quality=90" \
+		| ffmpeg -framerate 40 -i - -codec copy capture-$$(date --iso-8601=seconds | tr -d ':').mkv
 
 list:
 	@LC_ALL=C $(MAKE) -pRrq -f $(firstword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/(^|\n)# Files(\n|$$)/,/(^|\n)# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | grep -E -v -e '^[^[:alnum:]]' -e '^$@$$'

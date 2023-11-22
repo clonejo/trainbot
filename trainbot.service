@@ -13,8 +13,7 @@ WorkingDirectory=%h/trainbot
 ExecStart=%h/trainbot/trainbot-arm64
 EnvironmentFile=%h/trainbot/env
 
-# Restart forever.
-Restart=always
+Restart=on-failure
 # helps with rpicam-vid correctly releasing kernel resources (zombie processes):
 RestartSec=500ms
 StartLimitIntervalSec=0
