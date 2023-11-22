@@ -75,6 +75,9 @@ make deploy_confighelper host=pi@10.20.0.12
 sudo usermod -a -G video pi
 # The --input arg has to be adapted to your actual camera config.
 ./confighelper-arm64 --log-pretty --input=picam3 --listen-addr=0.0.0.0:8080
+
+set -o allexport; source ./env; set +o allexport
+./build/trainbot-arm64
 ```
 
 Example "Production" deployment to a remote host (will install a systemd user unit):

@@ -10,13 +10,9 @@ Documentation=https://github.com/jo-m/trainbot/
 [Service]
 Type=exec
 WorkingDirectory=%h/trainbot
-ExecStart=%h/trainbot/trainbot-arm64
+ExecStart=%h/trainbot/build/trainbot \
 EnvironmentFile=%h/trainbot/env
-
-# Restart forever.
-Restart=always
-RestartSec=500ms
-StartLimitIntervalSec=0
+Restart=on-failure
 
 [Install]
 WantedBy=default.target
