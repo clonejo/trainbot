@@ -34,34 +34,29 @@ func fitDx(seq sequence, maxSpeedPxS float64) ([]int, float64, float64, float64,
 
 	// Prepare data for fitting.
 	n := len(seq.dx)
-	dt := make([]float64, n)         // Time since last data point [s].
-	dtComplete := make([]float64, n) // Time since last data point [s].
-	t := make([]float64, n)          // Time since start [s].
-	tComplete := make([]float64, n)  // Time since start [s].
-	v := make([]float64, n)          // Current velocity [px/s].
-	ignored := 0
+	dt := make([]float64, 0, n)         // Time since last data point [s].
+	dtComplete := make([]float64, 0, n) // Time since last data point [s].
+	t := make([]float64, 0, n)          // Time since start [s].
+	tComplete := make([]float64, 0, n)  // Time since start [s].
+	v := make([]float64, 0, n)          // Current velocity [px/s].
 	for i := range seq.dx {
 		if i == 0 {
-			dtComplete[i] = seq.ts[i].Sub(*seq.startTS).Seconds()
+			dtComplete = append(dtComplete, seq.ts[i].Sub(*seq.startTS).Seconds())
 		} else {
-			dtComplete[i] = seq.ts[i].Sub(seq.ts[i-1]).Seconds()
+			dtComplete = append(dtComplete, seq.ts[i].Sub(seq.ts[i-1]).Seconds())
 		}
+		tComplete = append(tComplete, seq.ts[i].Sub(*seq.startTS).Seconds())
 		if seq.dx[i] == 0 {
-			ignored += 1
 			continue
 		}
-		if i == 0 {
-			dt[i-ignored] = seq.ts[i].Sub(*seq.startTS).Seconds()
+		if len(dt) == 0 {
+			dt = append(dt, seq.ts[i].Sub(*seq.startTS).Seconds())
 		} else {
-			dt[i-ignored] = seq.ts[i].Sub(seq.ts[i-1]).Seconds()
+			dt = append(dt, seq.ts[i].Sub(seq.ts[i-1]).Seconds())
 		}
-		t[i-ignored] = seq.ts[i].Sub(*seq.startTS).Seconds()
-		tComplete[i] = seq.ts[i].Sub(*seq.startTS).Seconds()
-		v[i-ignored] = float64(seq.dx[i]) / dt[i-ignored]
+		t = append(t, seq.ts[i].Sub(*seq.startTS).Seconds())
+		v = append(v, float64(seq.dx[i])/dt[len(dt)-1])
 	}
-	dt = dt[0 : len(dt)-ignored]
-	t = t[0 : len(t)-ignored]
-	v = v[0 : len(v)-ignored]
 
 	// Fit.
 	params := ransac.MetaParams{
