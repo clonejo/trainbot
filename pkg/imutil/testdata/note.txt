@@ -1,5 +1,5 @@
 512x256.yuv420p.data
-    raw data dumped from the camera via libcamera-vid.
+    raw data dumped from the camera via rpicam-vid.
 
 512x256.yuv420p.jpg
     ground truth for the test, generated from the data dump with

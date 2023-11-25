@@ -19,7 +19,7 @@ import (
 // Hardcoded values for the Raspberry Pi Camera Module v3.
 // Possible values:
 //
-//	pi@raspberrypi:~ $ libcamera-hello --list
+//	pi@raspberrypi:~ $ rpicam-hello --list
 //	Available cameras
 //	-----------------
 //	0 : imx708 [4608x2592] (/base/soc/i2c0mux/i2c@1/imx708@1a)
@@ -46,7 +46,7 @@ type PiCam3Config struct {
 }
 
 // PiCam3Src is a video frame source which reads frames from a Raspberry PI 3 camera module.
-// It uses the `libcamera-vid` utility internally.
+// It uses the `rpicam-vid` utility internally.
 // Use NewPiCam3Src() to open one.
 type PiCam3Src struct {
 	c                PiCam3Config
@@ -117,10 +117,10 @@ func NewPiCam3Src(c PiCam3Config) (*PiCam3Src, error) {
 		return nil, fmt.Errorf("unsupported image format '%s'", c.Format.String())
 	}
 
-	log.Info().Strs("args", args).Msg("libcamera-vid args")
+	log.Info().Strs("args", args).Msg("rpicam-vid args")
 
 	// #nosec G204
-	cmd := exec.Command("libcamera-vid", args...)
+	cmd := exec.Command("rpicam-vid", args...)
 
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
@@ -151,7 +151,7 @@ func NewPiCam3Src(c PiCam3Config) (*PiCam3Src, error) {
 	return ret, nil
 }
 
-// processErr forwards stderr from libcamera-vid to the logging system.
+// processErr forwards stderr from rpicam-vid to the logging system.
 func (s *PiCam3Src) processErr() {
 	scanner := bufio.NewScanner(s.errPipe)
 	for scanner.Scan() {

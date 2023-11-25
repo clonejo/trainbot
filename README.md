@@ -243,24 +243,24 @@ ffmpeg -f v4l2 -framerate 30 -video_size 3264x2448 -pixel_format mjpeg -i /dev/v
 
 ```bash
 # setup
-sudo apt-get install libcamera0 libcamera-apps-lite
+sudo apt-get install rpicam-apps-core
 sudo apt install -y vlc
 
 # grab frame
-# https://www.raspberrypi.com/documentation/computers/camera_software.html#libcamera-and-libcamera-apps
-libcamera-jpeg -o out.jpg -t 1 --width 4608 --height 2592 --rotation 180 --autofocus-mode=manual --lens-position=2
-libcamera-jpeg -o out.jpg -t 1 --width 2304 --height 1296 --rotation 180 --autofocus-mode=manual --lens-position=4.5 --roi 0.25,0.5,0.5,0.5
+# https://www.raspberrypi.com/documentation/computers/camera_software.html#rpicam-and-rpicam-apps
+rpicam-jpeg -o out.jpg -t 1 --width 4608 --height 2592 --rotation 180 --autofocus-mode=manual --lens-position=2
+rpicam-jpeg -o out.jpg -t 1 --width 2304 --height 1296 --rotation 180 --autofocus-mode=manual --lens-position=4.5 --roi 0.25,0.5,0.5,0.5
 
 # record video
-DATE=$(date +'%F_%H-%M-%S'); libcamera-vid -o $DATE.h264 --save-pts $DATE.txt --width 1080 --height 720 --rotation 180 --autofocus-mode=manual --lens-position=0 -t 0
+DATE=$(date +'%F_%H-%M-%S'); rpicam-vid -o $DATE.h264 --save-pts $DATE.txt --width 1080 --height 720 --rotation 180 --autofocus-mode=manual --lens-position=0 -t 0
 
 # stream through network
-libcamera-vid -t 0 --inline --nopreview --width 4608 --height 2592 --rotation 180 --codec mjpeg --framerate 5 --listen -o tcp://0.0.0.0:8080 --autofocus-mode=manual --lens-position=0 --roi 0.25,0.5,0.5,0.5
+rpicam-vid -t 0 --inline --nopreview --width 4608 --height 2592 --rotation 180 --codec mjpeg --framerate 5 --listen -o tcp://0.0.0.0:8080 --autofocus-mode=manual --lens-position=0 --roi 0.25,0.5,0.5,0.5
 # on localhost
 ffplay http://pi4:8080/video.mjpeg
 
 # manually record video for test cases
-libcamera-vid \
+rpicam-vid \
    --verbose=1 \
    --timeout=0 \
    --inline \
@@ -316,7 +316,7 @@ For debugging and tweaking a [Prometheus](https://prometheus.io/)-compatible end
 
 ```
 
-           libcamera-vid
+            rpicam-vid
                  │
                  ▼
         ┌─────────────────┐
