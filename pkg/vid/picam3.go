@@ -29,6 +29,7 @@ import (
 const (
 	sensorW = 2304
 	sensorH = 1296
+	// TODO: expose mode selection
 )
 
 // PiCam3Config is the configuration for a PiCam3Src.
