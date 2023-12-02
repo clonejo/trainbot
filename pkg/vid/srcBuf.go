@@ -2,10 +2,11 @@ package vid
 
 import (
 	"image"
+	"image/color"
 	"io"
 	"time"
 
-	"github.com/jo-m/trainbot/pkg/imutil"
+	"github.com/disintegration/imaging"
 	"github.com/rs/zerolog/log"
 )
 
@@ -21,6 +22,7 @@ type frameWithTS struct {
 type SrcBuf struct {
 	src             Src
 	maxFailedFrames int
+	rotateAngle     float64
 	queue           chan frameWithTS
 	err             chan error
 }
@@ -30,10 +32,11 @@ var _ Src = (*SrcBuf)(nil)
 
 // NewSrcBuf creates a new SrcBuf.
 // Will not close src, caller needs to do that after last frame is read.
-func NewSrcBuf(src Src, maxFailedFrames int) *SrcBuf {
+func NewSrcBuf(src Src, maxFailedFrames int, rotateAngle float64) *SrcBuf {
 	ret := SrcBuf{
 		src:             src,
 		maxFailedFrames: maxFailedFrames,
+		rotateAngle:     rotateAngle,
 		queue:           make(chan frameWithTS, queueSize),
 		err:             make(chan error),
 	}
@@ -75,8 +78,10 @@ func (s *SrcBuf) run() {
 
 		failedFrames = 0
 
-		// Create copy.
-		frame = imutil.Copy(frame)
+		// Create copy, and rotate if needed.
+		// angles of 0, 90, 180 and 270 are special-cased in imaging.Rotate()
+		// For angle=0 Clone() is called.
+		frame = imaging.Rotate(frame, s.rotateAngle, color.Black)
 
 		if live {
 			select {

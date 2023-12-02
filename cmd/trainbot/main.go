@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/alexflint/go-arg"
+	"github.com/disintegration/imaging"
 	"github.com/jmoiron/sqlx"
 	"github.com/jo-m/trainbot/internal/pkg/db"
 	"github.com/jo-m/trainbot/internal/pkg/logging"
@@ -35,6 +36,8 @@ type config struct {
 	CameraFormatFourCC string `arg:"--camera-format-fourcc,env:CAMERA_FORMAT_FOURCC" default:"MJPG" help:"Camera pixel format FourCC string, ignored if using video file" placeholder:"CODE"`
 	CameraW            int    `arg:"--camera-w,env:CAMERA_W" default:"1920" help:"Camera frame size width, ignored if using video file or picam3" placeholder:"X"`
 	CameraH            int    `arg:"--camera-h,env:CAMERA_H" default:"1080" help:"Camera frame size height, ignored if using video file or picam3" placeholder:"Y"`
+
+	RotateAngle float64 `arg:"--rotate-angle,env:ROTATE_ANGLE" default:"0" help:"Angle (0 to below 360) to rotate each frame counter-clockwise before processing. Rect coordinates are applied after rotation."`
 
 	RectX uint `arg:"-X,--rect-x,env:RECT_X" help:"Rect to look at, x (left)" placeholder:"N"`
 	RectY uint `arg:"-Y,--rect-y,env:RECT_Y" help:"Rect to look at, y (top)" placeholder:"N"`
@@ -129,7 +132,7 @@ func detectTrainsForever(c config, trainsOut chan<- *stitch.Train) {
 		log.Panic().Err(err).Str("path", c.InputFile).Msg("failed to open video source")
 	}
 	defer src.Close()
-	srcBuf := vid.NewSrcBuf(src, failedFramesMax)
+	srcBuf := vid.NewSrcBuf(src, failedFramesMax, c.RotateAngle)
 
 	stitcher := stitch.NewAutoStitcher(stitch.Config{
 		PixelsPerM:  c.PixelsPerM,
@@ -164,7 +167,7 @@ func detectTrainsForever(c config, trainsOut chan<- *stitch.Train) {
 			// Create a new image with only the cropped pixels,
 			// so we can gc the potentially large area from the
 			// original image.
-			cropped = imutil.Copy(cropped)
+			cropped = imaging.Clone(cropped)
 		}
 
 		if cropped.Bounds().Size() != rect.Size() {
