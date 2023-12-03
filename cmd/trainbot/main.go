@@ -117,7 +117,7 @@ func openSrc(c config) (vid.Src, error) {
 			Focus:     0,
 			Rotate180: false,
 			Format:    vid.FourCCFromString(c.CameraFormatFourCC),
-			FPS:       30,
+			FPS:       40, //TODO: expose to CLI
 		})
 	}
 

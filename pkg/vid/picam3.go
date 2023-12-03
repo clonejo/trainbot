@@ -19,16 +19,26 @@ import (
 // Hardcoded values for the Raspberry Pi Camera Module v3.
 // Possible values:
 //
-//	pi@raspberrypi:~ $ libcamera-hello --list
-//	Available cameras
-//	-----------------
-//	0 : imx708 [4608x2592] (/base/soc/i2c0mux/i2c@1/imx708@1a)
-//	    Modes: 'SRGGB10_CSI2P' : 1536x864 [120.13 fps - (768, 432)/3072x1728 crop]
-//	                             2304x1296 [56.03 fps - (0, 0)/4608x2592 crop]
-//	                             4608x2592 [14.35 fps - (0, 0)/4608x2592 crop]
+//  pi@raspberrypi:~ $ libcamera-hello --list
+//  Available cameras
+//  -----------------
+//  0 : imx708 [4608x2592] (/base/soc/i2c0mux/i2c@1/imx708@1a)
+//      Modes: 'SRGGB10_CSI2P' : 1536x864 [120.13 fps - (768, 432)/3072x1728 crop]
+//                               2304x1296 [56.03 fps - (0, 0)/4608x2592 crop]
+//                               4608x2592 [14.35 fps - (0, 0)/4608x2592 crop]
+
+//  Raspberry Pi HQ camera:
+//
+//  0 : imx477 [4056x3040 12-bit RGGB] (/base/soc/i2c0mux/i2c@1/imx477@1a)
+//      Modes: 'SRGGB10_CSI2P' : 1332x990 [120.05 fps - (696, 528)/2664x1980 crop]
+//             'SRGGB12_CSI2P' : 2028x1080 [50.03 fps - (0, 440)/4056x2160 crop]
+//                               2028x1520 [40.01 fps - (0, 0)/4056x3040 crop]
+//                               4056x3040 [10.00 fps - (0, 0)/4056x3040 crop]
+
 const (
-	sensorW = 2304
-	sensorH = 1296
+	sensorW = 1014
+	sensorH = 740
+	// TODO: expose mode selection
 )
 
 // PiCam3Config is the configuration for a PiCam3Src.
@@ -92,8 +102,9 @@ func NewPiCam3Src(c PiCam3Config) (*PiCam3Src, error) {
 		"--width", fmt.Sprint(c.Rect.Dx()),
 		"--height", fmt.Sprint(c.Rect.Dy()),
 		"--roi", roi,
-		fmt.Sprintf("--mode=%d:%d:12:P", sensorW, sensorH),
+		"--mode=2028:1520:12:P", //fmt.Sprintf("--mode=%d:%d:12:P", sensorW, sensorH),
 		"--framerate", fmt.Sprint(c.FPS),
+		//"--gain=128", // night mode 8)
 
 		"--autofocus-mode=manual",
 		fmt.Sprintf("--lens-position=%f", c.Focus),

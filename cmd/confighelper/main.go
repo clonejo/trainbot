@@ -79,7 +79,7 @@ func main() {
 			Focus:     0,
 			Rotate180: false,
 			Format:    vid.FourCCMJPEG,
-			FPS:       5,
+			FPS:       40,
 		})
 	} else {
 		src, err = vid.NewCamSrc(vid.CamConfig{
