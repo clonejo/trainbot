@@ -125,11 +125,12 @@ deploy_trainbot: docker_build
 
 	ssh $(host) mkdir -p trainbot/
 	scp env $(host):trainbot/
-	ssh $(host) systemctl --user stop trainbot.service
-	scp build/trainbot-arm64 $(host):trainbot/
 
 	ssh $(host) mkdir -p .config/systemd/user/
 	scp trainbot.service $(host):.config/systemd/user/
+	ssh $(host) systemctl --user stop trainbot.service
+
+	scp build/trainbot-arm64 $(host):trainbot/
 
 	ssh $(host) loginctl enable-linger
 	ssh $(host) systemctl --user enable trainbot.service
