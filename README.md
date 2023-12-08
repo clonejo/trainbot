@@ -308,3 +308,46 @@ For debugging and tweaking a [Prometheus](https://prometheus.io/)-compatible end
 - [ ] Add run/deploy instructions to README (including confighelper)
 - [ ] Maybe compress URL params - favorites list is getting longer and longer...
 - [ ] Remote blob cleanup is broken due to FTP LIST being restricted to 99998 entries by remote - use sftp instead
+- [ ] Check that offset (dx) detector doesn't look for tiny movements which would be below the minimum train speed
+- [ ] When we hit maxSeqLen, throw away every second frame from r.seq.frames.
+      And then skip every other incoming frame?
+- [ ] GIF that grows towards the travel direction of the train, building up the stitched image
+- [ ] FFT/DFT phase correllation to detect offsets? http://fftw.org/
+  - <https://docs.opencv.org/4.1.1/d7/df3/group__imgproc__motion.html#ga552420a2ace9ef3fb053cd630fdb4952>
+- [ ] Overlay moved train parts instead of stitching. Effectively we would use
+      more light for the same bit of train. Also, obstructions would matter
+      less, as they would even out over several exposures. Maybe we need
+      movement data more precise than int, and a more complex movement model
+      than linear for this. Use enblend/enfuse?
+      - [ ] enblend/enfuse
+        - [ ] only stitch a few frames at a time, and only present a small slice to enblend/enfuse at a time, then stitch those on our own
+      - i tried enfuse, looks good for reducing foliage overlap #20
+      - movement model: use splines?
+- [ ] Easy interactive crop rectangle selection.
+- [ ] Fix ICEs and freight trains.
+- [ ] detect UIC waggon numbers? at this point, we'll have to obscure faces :/
+- [ ] AV1 encoding for the video clips
+- [ ] What is the impact of the crop rect on movement detection? Only a certain
+      portion of the rect is analysed, right?
+- [ ] No need for the movement detection to require 3x maxDx width of the crop rectangle.
+- [ ] MRQ suggested more efficient movement detection using fourrier analysis
+- [ ] look at more properties than just contrast for picking good frames (eg.
+      blur detection using FFT)
+- [ ] Keep some raw video footage around for re-processing or creating test cases
+- [ ] Mastodon bot that posts a popular (full jpg views?) train every day.
+      Maybe just post the most viewed train that was not yet posted. 20:00
+      local time should be good.
+- [ ] Document what confighelper does.
+- [ ] Allow setting up the camera sensor sideways, since the crop rectangle may
+      be more tall than wide anyways.
+- [ ] Allow for a wider area for motion detection than what the frames are stitched together from.
+- [ ] Generate debug image with crop rectangle and motion detection area marked.
+- [ ] Monitor behavior with Prometheus.
+- [ ] Avoid colons in blob file names? (problematic for Mac and Windows)
+- [ ] Automatic video mode / gain changes for rpicam
+      - based on time of day (sunrise/sunset), or maybe just switch over based on contrast stats
+- [ ] movement detector sees a lot of tiny movements in a noisy image
+- [ ] run motion detection in parallel with stitcher, load is below 3.0 most of the time but we have 4 cores
+- [ ] while stitching/generating GIF, we don't actually don't need to keep
+      around all frames of the sequence. We could drop them as we go, or 'stream'
+      them.
