@@ -5,6 +5,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/jo-m/trainbot/internal/pkg/prometheus"
 	"github.com/jo-m/trainbot/pkg/avg"
 	"github.com/jo-m/trainbot/pkg/imutil"
 	"github.com/jo-m/trainbot/pkg/pmatch"
@@ -244,7 +245,8 @@ func (r *AutoStitcher) Frame(frameColor image.Image, ts time.Time) *Train {
 		// FIXME: so it should be checked in the beginning and then abort the program?
 		// FIXME: or maybe abort right here?
 		log.Error().Int("dx", frameRGBA.Rect.Dx()).Int("maxDx*3", maxDx*3).Float64("framePeriodS", framePeriodS).Msg("image is not wide enough to resolve the given max speed")
-		panic("Image is not wide enough to resolve the given max speed. Pick higher width or lower max speed, or readjust PX_PER_M.")
+		prometheus.RecordFrameDisposition("slow_frame")
+		return nil
 	}
 
 	isActive := len(r.seq.dx) > 0
@@ -253,6 +255,7 @@ func (r *AutoStitcher) Frame(frameColor image.Image, ts time.Time) *Train {
 	avg, avgDev := avg.RGBA(frameRGBA)
 	if sum3(avg)/3 < minContrastAvg || sum3(avgDev)/3 < minContrastAvgDev {
 		log.Trace().Interface("avgDev", avgDev).Interface("avg", avg).Msg("contrast too low, discarding")
+		prometheus.RecordFrameDisposition("low_contrast")
 
 		// Bail out when there is too much of a jump in time, eg. because frames were skipped
 		if isActive {
@@ -285,16 +288,19 @@ func (r *AutoStitcher) Frame(frameColor image.Image, ts time.Time) *Train {
 		}
 
 		r.record(r.prevFrameTS, frameColor, dx, ts)
+		prometheus.RecordFrameDisposition("recorded")
 		return nil
 	}
 
 	if score >= goodScoreNoMove && iabs(dx) < minDx {
 		log.Debug().Msg("not moving")
+		prometheus.RecordFrameDisposition("not_moving")
 		return nil
 	}
 
 	if score >= goodScoreMove && iabs(dx) >= minDx && iabs(dx) <= maxDx {
 		log.Info().Msg("start of new sequence")
+		prometheus.RecordFrameDisposition("recorded_new_sequence")
 		r.record(r.prevFrameTS, frameColor, dx, ts)
 		r.dxAbsLowPass = math.Abs(float64(dx))
 		return nil
@@ -309,5 +315,6 @@ func (r *AutoStitcher) Frame(frameColor image.Image, ts time.Time) *Train {
 		Int("minDx", minDx).
 		Int("maxDx", maxDx).
 		Msg("inconclusive frame")
+	prometheus.RecordFrameDisposition("inconclusive")
 	return nil
 }

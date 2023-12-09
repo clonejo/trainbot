@@ -19,6 +19,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/jo-m/trainbot/internal/pkg/db"
 	"github.com/jo-m/trainbot/internal/pkg/logging"
+	"github.com/jo-m/trainbot/internal/pkg/prometheus"
 	"github.com/jo-m/trainbot/internal/pkg/stitch"
 	"github.com/jo-m/trainbot/internal/pkg/upload"
 	"github.com/jo-m/trainbot/pkg/imutil"
@@ -54,6 +55,9 @@ type config struct {
 
 	upload.FTPConfig
 	upload.DataStore
+
+	// FIXME: default to disabled:
+	PrometheusListen string `arg:"--prometheus-listen,env:PROMETHEUS_LISTEN" default:":18963"`
 }
 
 func (c *config) getRect() image.Rectangle {
@@ -76,6 +80,7 @@ func parseCheckArgs() config {
 	c := config{}
 	p := arg.MustParse(&c)
 	logging.MustInit(c.LogConfig)
+	prometheus.Init(c.PrometheusListen)
 
 	if c.InputFile == "" {
 		p.Fail("no camera device or video file passed")
