@@ -17,6 +17,9 @@ func Init(prometheusListen string) {
 func RecordFrameDisposition(disposition string) {
 	frameDispositions.WithLabelValues(disposition).Inc()
 }
+func RecordSequenceLength(length int) {
+	sequenceLength.Set(float64(length))
+}
 
 var (
 	frameDispositions = promauto.NewCounterVec(
@@ -25,5 +28,11 @@ var (
 			Help: "How frames were used",
 		},
 		[]string{"disposition"},
+	)
+	sequenceLength = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "trainbot_sequence_length",
+			Help: "Current number of frames stored.",
+		},
 	)
 )
