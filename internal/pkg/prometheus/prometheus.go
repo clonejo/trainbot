@@ -21,6 +21,10 @@ func RecordSequenceLength(length int) {
 	sequenceLength.Set(float64(length))
 }
 
+func RecordFitAndStitchResult(result string) {
+	fitAndStitchResult.WithLabelValues(result).Inc()
+}
+
 var (
 	frameDispositions = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -34,5 +38,12 @@ var (
 			Name: "trainbot_sequence_length",
 			Help: "Current number of frames stored.",
 		},
+	)
+	fitAndStitchResult = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "trainbot_fit_and_stitch_results_total",
+			Help: "Results from fitAndStitch(). Eg. train detected, unable to fit.",
+		},
+		[]string{"result"},
 	)
 )
