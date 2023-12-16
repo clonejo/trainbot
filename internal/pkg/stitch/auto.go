@@ -1,6 +1,7 @@
 package stitch
 
 import (
+	"fmt"
 	"image"
 	"math"
 	"time"
@@ -199,6 +200,11 @@ func (r *AutoStitcher) TryStitchAndReset() *Train {
 	train, err := fitAndStitch(r.seq, r.c)
 	if err != nil {
 		log.Err(err).Time("startTs", r.seq.ts[0]).Msg("unable to fit and stitch sequence")
+
+		//r.dumpFrame(0)
+		//r.dumpFrame(1)
+		//r.dumpFrame(len(r.seq.frames) / 2)
+		//r.dumpFrame(len(r.seq.frames) - 1)
 	}
 
 	return train
@@ -301,8 +307,8 @@ func (r *AutoStitcher) Frame(frameColor image.Image, ts time.Time) *Train {
 
 	if cos >= goodCosScoreMove && iabs(dx) >= minDx && iabs(dx) <= maxDx {
 		log.Info().Msg("start of new sequence")
-		prometheus.RecordFrameDisposition("recorded_new_sequence")
 		r.record(r.prevFrameTS, frameColor, dx, ts)
+		prometheus.RecordFrameDisposition("recorded_new_sequence")
 		r.dxAbsLowPass = math.Abs(float64(dx))
 		return nil
 	}
@@ -318,4 +324,17 @@ func (r *AutoStitcher) Frame(frameColor image.Image, ts time.Time) *Train {
 		Msg("inconclusive frame")
 	prometheus.RecordFrameDisposition("inconclusive")
 	return nil
+}
+
+func (r *AutoStitcher) dumpFrame(frameNo int) {
+	if frameNo >= len(r.seq.frames) {
+		return
+	}
+	frame := r.seq.frames[frameNo]
+	tsString := r.seq.ts[0].Format("20060102_150405.999_Z07:00")
+	fileName := fmt.Sprintf("debug/%v_%04v.jpg", tsString, frameNo)
+	err := imutil.Dump(fileName, frame)
+	if err != nil {
+		log.Err(err).Msg("Couldn't dump debug frame after stitching failed.")
+	}
 }
