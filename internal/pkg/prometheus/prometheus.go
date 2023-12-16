@@ -24,6 +24,10 @@ func RecordSequenceLength(length int) {
 func RecordFitAndStitchResult(result string) {
 	fitAndStitchResult.WithLabelValues(result).Inc()
 }
+func RecordBrightnessContrast(avg float64, avgDev float64) {
+	brightnessAvg.Observe(avg)
+	brightnessAvgDev.Observe(avgDev)
+}
 
 var (
 	frameDispositions = promauto.NewCounterVec(
@@ -45,5 +49,17 @@ var (
 			Help: "Results from fitAndStitch(). Eg. train detected, unable to fit.",
 		},
 		[]string{"result"},
+	)
+	brightnessAvg = promauto.NewHistogram(
+		prometheus.HistogramOpts{
+			Name:    "trainbot_brightness_avg",
+			Buckets: prometheus.ExponentialBucketsRange(0.0005, 1.0, 100),
+		},
+	)
+	brightnessAvgDev = promauto.NewHistogram(
+		prometheus.HistogramOpts{
+			Name:    "trainbot_brightness_avgdev",
+			Buckets: prometheus.ExponentialBucketsRange(0.0005, 1.0, 100),
+		},
 	)
 )
