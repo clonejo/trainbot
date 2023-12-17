@@ -3,9 +3,11 @@ package ransac
 
 import (
 	"errors"
+	"fmt"
 	"image/color"
 	"math"
 	"math/rand"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"go-hep.org/x/hep/fit"
@@ -162,6 +164,11 @@ func Ransac(x, y []float64, model ModelFn, nParams int, p MetaParams) (*optimize
 	}
 
 	if bestFit.F == math.MaxFloat64 {
+		tsString := time.Now().Format("20060102_150405.999_Z07:00")
+		fileName := fmt.Sprintf("debug/%v_ransac_input.png", tsString)
+		Plot(
+			fileName,
+			x, y, nil, nil, "x", "y = f(x)")
 		return nil, errors.New("RANSAC unsuccessful")
 	}
 
