@@ -53,13 +53,13 @@ var (
 	brightnessAvg = promauto.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "trainbot_brightness_avg",
-			Buckets: prometheus.ExponentialBucketsRange(0.0005, 1.0, 10),
+			Buckets: prometheus.ExponentialBucketsRange(0.0005, 1.0, 20),
 		},
 	)
 	brightnessAvgDev = promauto.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "trainbot_brightness_avgdev",
-			Buckets: prometheus.ExponentialBucketsRange(0.0005, 1.0, 10),
+			Buckets: prometheus.ExponentialBucketsRange(0.0005, 1.0, 20),
 		},
 	)
 )
