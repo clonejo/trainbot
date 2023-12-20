@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+datadir=./data
+target=$UPLOAD_RSYNC_TARGET
+
+while true; do
+	{
+		rsync -rt --info=NAME \
+			--timeout=10 \
+			"$datadir"/blobs \
+			"$target"
+
+		# Upload db last, so frontend-rs only has to monitor the db file updating and can push new train to browsers without the image failing to load:
+		rsync -rt --info=NAME \
+			--timeout=10 \
+			"$datadir"/db.sqlite3 \
+			"$target"
+		find "$datadir/blobs" -type f -mtime +30 -delete
+	} || true
+	inotifywait --event=modify --timeout 3600 "$datadir"/db.sqlite3
+done

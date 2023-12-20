@@ -148,24 +148,28 @@ deploy_trainbot: docker_build
 	test -n "$(host)" # missing target host, usage: make deploy_trainbot host=TRAINBOT_DEPLOY_TARGET_SSH_HOST !
 
 	ssh $(host) mkdir -p trainbot/
-	scp env $(host):trainbot/
+	rsync env $(host):trainbot/
 
 	ssh $(host) mkdir -p .config/systemd/user/
-	scp trainbot.service $(host):.config/systemd/user/
+	rsync trainbot.service $(host):.config/systemd/user/
+	rsync trainbot-rsync-uploader.service $(host):.config/systemd/user/
 	ssh $(host) systemctl --user stop trainbot.service
+	ssh $(host) systemctl --user stop trainbot-rsync-uploader.service
 
-	scp build/trainbot-arm64 $(host):trainbot/
+	#ssh $(host) sudo apt-get install -y inotify-tools
+	rsync build/trainbot-arm64 $(host):trainbot/
+	rsync ./rsync-uploader $(host):trainbot/
 
 	ssh $(host) loginctl enable-linger
-	ssh $(host) systemctl --user enable trainbot.service
-	ssh $(host) systemctl --user start trainbot.service
+	ssh $(host) systemctl --user enable --now trainbot.service
+	ssh $(host) systemctl --user enable --now trainbot-rsync-uploader.service
 
 # Usage: make deploy_confighelper host=TRAINBOT_DEPLOY_TARGET_SSH_HOST
 # Example: make deploy_confighelper host=pi@10.20.0.12
 deploy_confighelper: docker_build
 	test -n "$(host)" # missing target host, usage: make deploy_confighelper host=TRAINBOT_DEPLOY_TARGET_SSH_HOST !
 	ssh $(host) mkdir -p trainbot/
-	scp build/confighelper-arm64 $(host):trainbot/
+	rsync build/confighelper-arm64 $(host):trainbot/
 
 list:
 	@LC_ALL=C $(MAKE) -pRrq -f $(firstword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/(^|\n)# Files(\n|$$)/,/(^|\n)# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | grep -E -v -e '^[^[:alnum:]]' -e '^$@$$'
