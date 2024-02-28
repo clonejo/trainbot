@@ -47,6 +47,10 @@ func RecordBrightnessContrast(avg float64, avgDev float64) {
 	brightnessAvgDev.Observe(avgDev)
 }
 
+func RecordFrameDTs(dTs float64) {
+	frameDTs.Observe(dTs)
+}
+
 var (
 	frameDispositions = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -77,6 +81,12 @@ var (
 	brightnessAvgDev = promauto.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "trainbot_brightness_avgdev",
+			Buckets: prometheus.ExponentialBucketsRange(0.0005, 1.0, 20),
+		},
+	)
+	frameDTs = promauto.NewHistogram(
+		prometheus.HistogramOpts{
+			Name:    "trainbot_frame_dts",
 			Buckets: prometheus.ExponentialBucketsRange(0.0005, 1.0, 20),
 		},
 	)

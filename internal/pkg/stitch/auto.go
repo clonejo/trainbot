@@ -247,6 +247,8 @@ func (r *AutoStitcher) Frame(frameColor image.Image, ts time.Time) *Train {
 	}
 	minDx := r.c.minPxPerFrame(framePeriodS)
 	maxDx := r.c.maxPxPerFrame(framePeriodS)
+	prometheus.RecordFrameDTs(framePeriodS)
+	//log.Info().Float64("framePeriodS", framePeriodS).Msg("frame period")
 
 	// Sanity check.
 	if frameRGBA.Rect.Dx() < maxDx*3 {

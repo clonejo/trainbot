@@ -98,6 +98,7 @@ func NewPiCam3Src(c PiCam3Config) (*PiCam3Src, error) {
 		"--autofocus-mode=manual",
 		fmt.Sprintf("--lens-position=%f", c.Focus),
 
+		//"--save-pts", "/tmp/frameperiod.pts",
 		"--output", "-",
 	}
 	if c.Rotate180 {
@@ -178,6 +179,10 @@ func (s *PiCam3Src) readFrame() ([]byte, error) {
 	}
 }
 
+var (
+	lastFrameTime time.Time = time.Now()
+)
+
 // GetFrame implements Src.
 func (s *PiCam3Src) GetFrame() (image.Image, *time.Time, error) {
 	buf, err := s.readFrame()
@@ -185,10 +190,15 @@ func (s *PiCam3Src) GetFrame() (image.Image, *time.Time, error) {
 		return nil, nil, err
 	}
 
-	ts := time.Now()
+	// let's just lie about the actual time, our frame source is much better than our jittery time.Now() here anyway
+	// except when the Raspi HQ camera drops to like 30fps, then it's not great. Still better than time.Now()
+	// even individual frames appear to sometimes be slow/fast
+	// FIXME: incorporate timings from --save-pts
+	lastFrameTime = lastFrameTime.Add(time.Millisecond * (1000.0 / 40.0))
+	ts := lastFrameTime
 	switch s.c.Format {
 	case FourCCYUV420:
-		return imutil.NewYuv420(buf, s.c.Rect.Dx(), s.c.Rect.Dy()), &ts, nil
+		return imutil.NewYuv420(buf, s.c.Rect.Dx(), s.c.Rect.Dy()), &lastFrameTime, nil
 	case FourCCMJPEG:
 		im, err := jpeg.Decode(bytes.NewBuffer(buf))
 		if err != nil {
