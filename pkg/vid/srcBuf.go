@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const queueSize = 200
+const queueSize = 3000
 
 type frameWithTS struct {
 	frame image.Image
