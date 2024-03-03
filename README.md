@@ -99,12 +99,7 @@ journalctl --user -eu trainbot.service
 Download latest data from Raspberry Pi:
 
 ```bash
-ssh "$TRAINBOT_DEPLOY_TARGET_SSH_HOST" sqlite3 trainbot/data/db.sqlite3
-.backup trainbot/data/db.sqlite3.bak
-# Ctrl+D
 rsync --verbose --archive --rsh=ssh "$TRAINBOT_DEPLOY_TARGET_SSH_HOST:trainbot/data/" data/
-rm data/db.sqlite3-shm data/db.sqlite3-wal
-mv data/db.sqlite3.bak data/db.sqlite3
 ```
 
 ### Frontend

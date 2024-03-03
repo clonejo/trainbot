@@ -31,7 +31,9 @@ func buildDSN(path string, readOnly bool) string {
 	}
 
 	pragmas := map[string]string{
-		"journal_mode": "WAL",
+		"busy_timeout": "5000",
+		"journal_mode": "DELETE",
+		"synchronous":  "NORMAL",
 		"locking_mode": "NORMAL",
 		"foreign_keys": "true",
 	}
