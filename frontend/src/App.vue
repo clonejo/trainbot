@@ -34,6 +34,14 @@ watch(browserInDarkMode, (val) => {
 
       <div id="app-bar-teleport"></div>
 
+      <!-- Fedi link -->
+      <v-btn
+        variant="text"
+        icon="mdi-mastodon"
+        href="https://ostfrie.se/onlytrains"
+        aria-label="Fediverse bot posting popular trains"
+      ></v-btn>
+
       <!-- Github link -->
       <v-btn
         variant="text"
