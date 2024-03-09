@@ -1,0 +1,9 @@
+[Service]
+Type=exec
+WorkingDirectory=%h/trainbot
+ExecStart=%h/trainbot/rsync-uploader ./data
+EnvironmentFile=%h/trainbot/env
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

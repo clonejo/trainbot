@@ -128,13 +128,17 @@ deploy_trainbot: docker_build
 
 	ssh $(host) mkdir -p .config/systemd/user/
 	rsync trainbot.service $(host):.config/systemd/user/
+	rsync trainbot-rsync-uploader.service $(host):.config/systemd/user/
 	ssh $(host) systemctl --user stop trainbot.service
+	ssh $(host) systemctl --user stop trainbot-rsync-uploader.service
 
+	#ssh $(host) sudo apt-get install -y inotify-tools
 	rsync build/trainbot-arm64 $(host):trainbot/
+	rsync ./rsync-uploader $(host):trainbot/
 
 	ssh $(host) loginctl enable-linger
-	ssh $(host) systemctl --user enable trainbot.service
-	ssh $(host) systemctl --user start trainbot.service
+	ssh $(host) systemctl --user enable --now trainbot.service
+	ssh $(host) systemctl --user enable --now trainbot-rsync-uploader.service
 
 # Usage: make deploy_confighelper host=TRAINBOT_DEPLOY_TARGET_SSH_HOST
 # Example: make deploy_confighelper host=pi@10.20.0.12

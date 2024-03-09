@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+datadir=$1
+
+while true; do
+    rsync -rt --info=NAME \
+        --timeout=10 \
+        "$datadir"/{db.sqlite3,blobs} \
+        onlytrains@192.168.1.22:./data/
+    inotifywait --event=modify --timeout 3600 "$datadir"/db.sqlite3
+done
+
