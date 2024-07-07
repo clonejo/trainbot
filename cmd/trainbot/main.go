@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/png"
 	"io/fs"
 	"math"
 	"math/rand"
@@ -37,10 +38,11 @@ type config struct {
 	CameraW            int    `arg:"--camera-w,env:CAMERA_W" default:"1920" help:"Camera frame size width, ignored if using video file or picam3" placeholder:"X"`
 	CameraH            int    `arg:"--camera-h,env:CAMERA_H" default:"1080" help:"Camera frame size height, ignored if using video file or picam3" placeholder:"Y"`
 
-	RectX uint `arg:"-X,--rect-x,env:RECT_X" help:"Rect to look at, x (left)" placeholder:"N"`
-	RectY uint `arg:"-Y,--rect-y,env:RECT_Y" help:"Rect to look at, y (top)" placeholder:"N"`
-	RectW uint `arg:"-W,--rect-w,env:RECT_W" help:"Rect to look at, width" placeholder:"N"`
-	RectH uint `arg:"-H,--rect-h,env:RECT_H" help:"Rect to look at, height" placeholder:"N"`
+	RectX    uint    `arg:"-X,--rect-x,env:RECT_X" help:"Rect to look at, x (left)" placeholder:"N"`
+	RectY    uint    `arg:"-Y,--rect-y,env:RECT_Y" help:"Rect to look at, y (top)" placeholder:"N"`
+	RectW    uint    `arg:"-W,--rect-w,env:RECT_W" help:"Rect to look at, width" placeholder:"N"`
+	RectH    uint    `arg:"-H,--rect-h,env:RECT_H" help:"Rect to look at, height" placeholder:"N"`
+	RectMask *string `arg:"--mask,env:RECT_MASK" help:"When stitching, only take pixels from the white areas in the mask." placeholder:"FILE"`
 
 	PixelsPerM          float64 `arg:"--px-per-m,env:PX_PER_M" default:"45" help:"Pixels per meter, can be reconstructed from sleepers: they are usually 0.6m apart (in Europe)" placeholder:"K"`
 	MinSpeedKPH         float64 `arg:"--min-speed-kph,env:MIN_SPEED_KPH" default:"25" help:"Assumed train min speed, km/h" placeholder:"K"`
@@ -147,12 +149,24 @@ func detectTrainsForever(c config, trainsOut chan<- *stitch.Train) {
 	defer src.Close()
 	srcBuf := vid.NewSrcBuf(src, failedFramesMax)
 
+	var mask image.Image
+	if c.RectMask != nil {
+		fMask, err := os.Open(*c.RectMask)
+		if err != nil {
+			log.Panic().Err(err)
+		}
+		mask, err = png.Decode(fMask)
+		if err != nil {
+			log.Panic().Err(err)
+		}
+	}
 	stitcher := stitch.NewAutoStitcher(stitch.Config{
 		PixelsPerM:          c.PixelsPerM,
 		MinSpeedKPH:         c.MinSpeedKPH,
 		MaxSpeedKPH:         c.MaxSpeedKPH,
 		MinLengthM:          c.MinLengthM,
 		MaxFrameCountPerSeq: c.MaxFrameCountPerSeq,
+		Mask:                mask,
 	})
 	defer func() {
 		train := stitcher.TryStitchAndReset()

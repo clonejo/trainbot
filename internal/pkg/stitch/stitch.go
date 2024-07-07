@@ -39,7 +39,7 @@ func sign(x float64) float64 {
 	return 0
 }
 
-func stitch(frames []image.Image, dx []int) (*image.RGBA, error) {
+func stitch(frames []image.Image, dx []int, mask image.Image) (*image.RGBA, error) {
 	t0 := time.Now()
 	defer func() {
 		log.Trace().Dur("dur", time.Since(t0)).Msg("stitch() duration")
@@ -60,6 +60,9 @@ func stitch(frames []image.Image, dx []int) (*image.RGBA, error) {
 			log.Panic().Msg("frame bounds or size not consistent, this should not happen")
 		}
 	}
+	if mask != nil && fb != mask.Bounds() {
+		log.Panic().Interface("frame", fb).Interface("mask", mask.Bounds()).Msg("mask size and frame size do not match!")
+	}
 
 	// Calculate base width.
 	sign := isign(dx[0])
@@ -79,18 +82,26 @@ func stitch(frames []image.Image, dx []int) (*image.RGBA, error) {
 	}
 	img := image.NewRGBA(rect)
 
+	mp := image.Point{}
+	op := draw.Src
+	if mask != nil {
+		log.Debug().Msg("Stitching using mask.")
+		mp = mask.Bounds().Min
+		op = draw.Over
+	}
+
 	// Forward?
 	if w > 0 {
 		pos := 0
 		for i, f := range frames {
-			draw.Draw(img, img.Bounds().Add(image.Pt(pos, 0)), f, f.Bounds().Min, draw.Src)
+			draw.DrawMask(img, img.Bounds().Add(image.Pt(pos, 0)), f, f.Bounds().Min, mask, mp, op)
 			pos += dx[i]
 		}
 	} else {
 		// Backwards.
 		pos := -w - fb.Dx()
 		for i, f := range frames {
-			draw.Draw(img, img.Bounds().Add(image.Pt(pos, 0)), f, f.Bounds().Min, draw.Src)
+			draw.DrawMask(img, img.Bounds().Add(image.Pt(pos, 0)), f, f.Bounds().Min, mask, mp, op)
 			pos += dx[i]
 		}
 	}
@@ -235,7 +246,7 @@ func fitAndStitch(seq sequence, c Config) (*Train, error) {
 		return nil, fmt.Errorf("discarded because too slow, %f < %f", speed, c.minSpeedPxPS())
 	}
 
-	img, err := stitch(seq.frames, dxFit)
+	img, err := stitch(seq.frames, dxFit, c.Mask)
 	if err != nil {
 		prometheus.RecordFitAndStitchResult("unable_to_assemble_image")
 		return nil, fmt.Errorf("unable to assemble image: %w", err)
