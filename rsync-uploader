@@ -4,10 +4,17 @@ set -euo pipefail
 datadir=$1
 
 while true; do
-    rsync -rt --info=NAME \
-        --timeout=10 \
-        "$datadir"/{db.sqlite3,blobs} \
-        onlytrains@192.168.1.22:./data/
+    {
+        rsync -rt --info=NAME \
+            --timeout=10 \
+            "$datadir"/blobs \
+            'onlytrains@[fe80::d250:99ff:fe1c:2505%eth0]:./data/'
+        rsync -rt --info=NAME \
+            --timeout=10 \
+            "$datadir"/db.sqlite3 \
+            'onlytrains@[fe80::d250:99ff:fe1c:2505%eth0]:./data/'
+            find "$datadir/blobs" -type f -mtime +30 -delete
+        } || true
     inotifywait --event=modify --timeout 3600 "$datadir"/db.sqlite3
 done
 
