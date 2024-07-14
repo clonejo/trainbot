@@ -53,6 +53,8 @@ func (s *SrcBuf) cleanup(err error) {
 func (s *SrcBuf) run() {
 	live := s.src.IsLive()
 	failedFrames := 0
+	droppedFramesInARow := 0
+	dropsLogged := 0
 
 	for {
 		frame, ts, err := s.src.GetFrame()
@@ -83,9 +85,15 @@ func (s *SrcBuf) run() {
 			select {
 			case s.queue <- frameWithTS{frame, *ts}:
 				prometheus.RecordSourceQueueLength(len(s.queue))
+				droppedFramesInARow = 0
+				dropsLogged = 0
 			default:
-				log.Warn().Msg("dropped frame")
 				prometheus.RecordFrameDisposition("dropped")
+				droppedFramesInARow += 1
+				if droppedFramesInARow >= dropsLogged*5 {
+					log.Warn().Int("droppedFramesInARow", droppedFramesInARow).Msg("dropped frame")
+					dropsLogged = droppedFramesInARow
+				}
 			}
 		} else {
 			s.queue <- frameWithTS{frame, *ts}
