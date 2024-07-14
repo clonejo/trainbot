@@ -36,6 +36,11 @@ func RecordSequenceLength(length int) {
 	sequenceLength.Set(float64(length))
 }
 
+// RecordSourceQueueLength sets the number of frames queued up before motion detection and stitching.
+func RecordSourceQueueLength(length int) {
+	sourceQueueLength.Set(float64(length))
+}
+
 // RecordFitAndStitchResult counts fitAndStitch() successes and failure modes.
 func RecordFitAndStitchResult(result string) {
 	fitAndStitchResult.WithLabelValues(result).Inc()
@@ -63,6 +68,12 @@ var (
 		prometheus.GaugeOpts{
 			Name: "trainbot_sequence_length",
 			Help: "Current number of frames stored.",
+		},
+	)
+	sourceQueueLength = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "trainbot_source_queue_length",
+			Help: "Input frames queued up (before motion detection and stitching).",
 		},
 	)
 	fitAndStitchResult = promauto.NewCounterVec(
