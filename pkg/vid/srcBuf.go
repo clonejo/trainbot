@@ -82,6 +82,7 @@ func (s *SrcBuf) run() {
 		if live {
 			select {
 			case s.queue <- frameWithTS{frame, *ts}:
+				prometheus.RecordSourceQueueLength(len(s.queue))
 			default:
 				log.Warn().Msg("dropped frame")
 				prometheus.RecordFrameDisposition("dropped")
@@ -97,6 +98,7 @@ func (s *SrcBuf) run() {
 // The underlying image buffer will be owned by the caller, src will not reuse or modify it.
 func (s *SrcBuf) GetFrame() (image.Image, *time.Time, error) {
 	f, ok := <-s.queue
+	prometheus.RecordSourceQueueLength(len(s.queue))
 	if ok {
 		return f.frame, &f.ts, nil
 	}
