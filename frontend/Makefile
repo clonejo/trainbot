@@ -4,6 +4,7 @@
 DOCKER_BASE_IMAGE = node:20.9.0-alpine3.18
 FRONTEND_DEPLOY_TARGET_SSH_HOST_ = ${FRONTEND_DEPLOY_TARGET_SSH_HOST}
 VITE_FRONTEND_BASE_URL_ = ${VITE_FRONTEND_BASE_URL}
+VITE_FRONTEND_DATA_URL_ = ${VITE_FRONTEND_DATA_URL}
 
 run:
 	VITE_BASE_URL=http://localhost:5173/ \
@@ -23,9 +24,10 @@ format:
 
 build:
 	test -n "$(VITE_FRONTEND_BASE_URL_)" # missing env var, please set up env file from env.example and source it
+	test -n "$(VITE_FRONTEND_DATA_URL_)" # missing env var, please set up env file from env.example and source it
 	VITE_BASE_URL=$(VITE_FRONTEND_BASE_URL_) \
-	VITE_DB_URL=$(VITE_FRONTEND_BASE_URL_)/data/db.sqlite3 \
-	VITE_BLOBS_URL=$(VITE_FRONTEND_BASE_URL_)/data/blobs \
+	VITE_DB_URL=$(VITE_FRONTEND_DATA_URL_)/db.sqlite3 \
+	VITE_BLOBS_URL=$(VITE_FRONTEND_DATA_URL_)/blobs \
 		yarn run build
 
 deploy: build #docker_build
