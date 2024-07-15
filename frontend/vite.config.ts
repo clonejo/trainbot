@@ -37,5 +37,6 @@ export default ({ mode }) => {
     build: {
         //minify: false
     },
+    base: process.env.VITE_FRONTEND_BASE_URL,
   })
 }
