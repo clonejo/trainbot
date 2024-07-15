@@ -28,7 +28,7 @@ build:
 	VITE_BLOBS_URL=$(VITE_FRONTEND_BASE_URL_)/data/blobs \
 		yarn run build
 
-deploy: docker_build
+deploy: build #docker_build
 	test -n "$(FRONTEND_DEPLOY_TARGET_SSH_HOST_)" # missing env var, please set up env file from env.example and source it
 	rm -rf dist/_data
 	chmod 755 dist/
