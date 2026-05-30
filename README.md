@@ -1,11 +1,6 @@
 # Onlytrains
 
-**⚠️ Onlytrains is no longer being maintained due to time constraints. The frontend, with some archived data still available, is at <https://trains.jo-m.ch>. ⚠️**
-
-Other deployments:
-
-- <https://trains.shakik.de/>
-- <https://trains.rahix.de/>
+<img src="frontend/src/assets/logo-day.svg" height="100" width="100">
 
 Watches a piece of train track, detects passing trains, and stitches together images of them.
 Should work with any video4linux USB cam, or Raspberry Pi camera v3 modules.
@@ -17,6 +12,15 @@ The name Onlytrains is credited to [@timethy](https://github.com/timethy).
 [<img src="internal/pkg/stitch/testdata/set0/rain.jpg">](internal/pkg/stitch/testdata/set0/rain.jpg)
 [<img src="internal/pkg/stitch/testdata/set0/snow.jpg">](internal/pkg/stitch/testdata/set0/snow.jpg)
 [<img src="demo.gif">](demo.gif)
+
+Deployments:
+
+- <https://trains.shakik.de/> by clonejo. Active since 2023-11.
+
+Not recording, but archive is still online:
+
+- <https://trains.jo-m.ch/> by jo-m, the author of Onlytrains. Active 2023-03 to 2025-09.
+- <https://trains.rahix.de/> by rahix. Active 2025-02 to 2025-05.
 
 It also contains some packages which might be useful for other purposes:
 
