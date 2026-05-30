@@ -1,20 +1,15 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
-    unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
   };
 
   outputs = {
     self,
     nixpkgs,
-    unstable,
   } @ inputs: let
     lib = nixpkgs.lib;
     system = "x86_64-linux";
     pkgs = import inputs.nixpkgs {
-      system = system;
-    };
-    unstablePkgs = import inputs.unstable {
       system = system;
     };
   in {
@@ -31,7 +26,7 @@
         clang-tools
         gnumake
         curl
-        unstablePkgs.go_1_25
+        go_1_26
 
         # Cross
         pkgsCross.aarch64-multiplatform.buildPackages.gcc # Provides aarch64-unknown-linux-gnu-gcc
