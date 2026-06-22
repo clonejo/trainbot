@@ -61,7 +61,9 @@ See `config struct` on top of `cmd/trainbot/main.go`, or run `trainbot --help` t
 
 The two Makefiles (root and frontend/) also contain some hints.
 
-## Deployment
+## Getting started
+
+### Installation
 
 There are two parts to deploy: First, the Go binary which detects trains, and second the web frontend.
 
@@ -72,7 +74,21 @@ There are multiple options:
 2. Grab a binary from the latest CI run at <https://github.com/jo-m/trainbot/actions>
 3. Build via tooling in this repo - see [Development](#development)
 
-### Raspberry Pi
+### Record video and post-process into panorama images
+
+1. Take whatever camera you have (phone camera, mirrorless camera, whatever).
+2. Go to a train track, where you have a good view of the trains.
+3. Prop up the camera (tripod, cardboard boxes) so it does not move.
+4. Ideally, both the tracks and the top of the train (catenary wire) are in frame. It does not matter that much if the trains are far away and only a small part of the image.
+5. Hit record and keep it running for a couple trains.
+6. Copy the video files onto your computer.
+7. Look at the video and pick a rectangle (top left corner coordinates and width+height). The rectangle should be free of obstructions in front of the trains (bushes, masts).
+8. Get `trainbot` executable (see "Installation" above).
+9. `./trainbot --input video.mp4 --rect-x N --rect-y N --rect-w N --rect-h N`
+    - You may have to adjust the rectangle width (`--rect-w`) or image scale (`--px-per-m`) or maximum train speed `--max-speed-kph` so that the it never takes trains to travel through rectangle in less than 3 frames.
+10. Check the `data/blobs` folder and enjoy your pictures  :)
+
+### Live processing on a Raspberry Pi or old laptop
 
 Run the interactive tool to adjust camera and select a crop rectangle:
 
