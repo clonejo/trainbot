@@ -209,6 +209,12 @@ For VSCode, add the following to `.vscode/settings.json`:
 "go.buildTags": "vk,moretests"
 ```
 
+## Contributions
+
+While the [upstream repository](https://github.com/jo-m/trainbot) of the original author has been archived, contributions to this fork are welcome. Contributions are assumed to fall under the existing MIT license.
+
+Mostly LLM-generated contributions will not be accepted. You may may use LLMs as an assistant (eg. reviewing and figuring out APIs). I (clonejo) am not fundamentally opposed to LLMs, but overuse would lower the code quality.
+
 ## V4L Settings
 
 ```bash
