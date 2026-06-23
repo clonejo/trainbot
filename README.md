@@ -264,6 +264,33 @@ libcamera-vid \
 mkvmerge -o test.mkv --timecodes 0:vid-timestamps.txt vid.h264
 ```
 
+## How to create mask
+
+- fetch a background image
+  1. either from confighelper
+      - select your rectangle in confighelper
+      - configure rectangle in trainbot
+      - take a screenshot, scale must be 1:1
+      - open screenshot in GIMP
+      - select rectangle (dimensions must be exact!)
+      - Image -> Crop to Selection
+  2. or from gif (video clip)
+      - open train .gif in gimp
+      - in the layers list, delete layers from the top until you find a good one
+      - flatten image
+- in layer list, right click layer, add mask
+- select the mask thumbnail
+- Using paintbrush tool, hide the obstructions (foreground) in black, white will be kept. Prefer to leave only a vertical pillar visible, to avoid artifacts.
+- CTRL-A, CTRL-C
+- create new file
+- CTRL-V, merge / anchor floating layer down
+- Colors -> Color to Alpha
+- Color: black, OK
+- File -> Export to mask.png
+- configure `RECT_MASK=mask.png`, upload mask.png to where you run trainbot
+
+If you end up with black artifacts, the pillar you let through is too small for the speed this train is travelling at.
+
 ## Code notes
 
 * Zerolog is used as logging framework

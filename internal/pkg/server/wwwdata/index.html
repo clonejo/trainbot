@@ -29,16 +29,28 @@
 			})
 		}
 
-		function elementToImgCoordinates(event) {
-			const stream = event.target;
+		function elementToImgCoordinates(x, y) {
+			const stream = document.querySelector("#stream");
 			return {
-				x: stream.naturalWidth / stream.width * event.layerX,
-				y: stream.naturalHeight / stream.height * event.layerY
+				x: stream.naturalWidth / stream.width * x,
+				y: stream.naturalHeight / stream.height * y,
+			}
+		}
+		function imgToElementCoordinates(x, y) {
+			const stream = document.querySelector("#stream");
+			return {
+				x: stream.width / stream.naturalWidth * x,
+				y: stream.height / stream.naturalHeight * y,
 			}
 		}
 
 		const selectionState = {
-			active: false,
+			waitForSecondClick: false,
+			mask: false,
+			maskSize: {
+				w: -1,
+				h: -1,
+			},
 			rect: {
 				x0: -1,
 				y0: -1,
@@ -60,7 +72,7 @@
 			rect.style.width = (selectionState.rect.x1 - selectionState.rect.x0)+"px"
 			rect.style.height = (selectionState.rect.y1 - selectionState.rect.y0)+"px"
 
-			rect.hidden = selectionState.rect.x0 < 0 || selectionState.active
+			rect.hidden = selectionState.rect.x0 < 0 || selectionState.waitForSecondClick
 		}
 
 		function swap(obj, key1, key2) {
@@ -68,9 +80,11 @@
 		}
 
 		function updateStreamRect(event) {
-			const imgCoord = elementToImgCoordinates(event)
+			const imgCoord = elementToImgCoordinates(event.layerX, event.layerY)
+			var rectCompleted = false
 
-			if (!selectionState.active) {
+			if (!selectionState.waitForSecondClick) {
+				// first click
 				selectionState.rect.x0 = event.layerX
 				selectionState.rect.y0 = event.layerY
 				selectionState.rect.x1 = -1
@@ -81,10 +95,24 @@
 				selectionState.img.x1 = -1
 				selectionState.img.y1 = -1
 
-				document.querySelector("#rectOptions").innerHTML = ""
-				document.querySelector("#rectOptionsEnv").innerHTML = ""
-				selectionState.active = true
-			} else {
+				rectCompleted = false
+			}
+
+			console.log(selectionState)
+
+			if (!selectionState.waitForSecondClick && selectionState.mask) {
+				// With a mask configured, we take width and height from the mask instead of letting the user click again.
+				wh = imgToElementCoordinates(selectionState.maskSize.w, selectionState.maskSize.h)
+				selectionState.rect.x1 = event.layerX + wh.x
+				selectionState.rect.y1 = event.layerY + wh.y
+				selectionState.img.x1 = imgCoord.x + selectionState.maskSize.w
+				selectionState.img.y1 = imgCoord.y + selectionState.maskSize.h
+
+				rectCompleted = true
+			}
+
+			if (selectionState.waitForSecondClick) {
+				// second click
 				selectionState.rect.x1 = event.layerX
 				selectionState.rect.y1 = event.layerY
 
@@ -101,6 +129,15 @@
 					swap(selectionState.img, "y0", "y1")
 				}
 
+				rectCompleted = true
+			}
+
+			if (!rectCompleted) {
+				document.querySelector("#rectOptions").innerHTML = ""
+				document.querySelector("#rectOptionsEnv").innerHTML = ""
+
+				selectionState.waitForSecondClick = true
+			} else {
 				const [x, y, w, h] = [
 					selectionState.img.x0,
 					selectionState.img.y0,
@@ -114,7 +151,6 @@
 					w: Math.round(w),
 					h: Math.round(h),
 				}
-
 				document.querySelector("#rectOptions").innerHTML = `-X ${rounded.x} -Y ${rounded.y} -W ${rounded.w} -H ${rounded.h}`
 				document.querySelector("#rectOptionsEnv").innerHTML =
 `RECT_X=${rounded.x}
@@ -122,7 +158,7 @@ RECT_Y=${rounded.y}
 RECT_W=${rounded.w}
 RECT_H=${rounded.h}`
 
-				selectionState.active = false
+				selectionState.waitForSecondClick = false
 			}
 
 			renderState()
@@ -130,7 +166,51 @@ RECT_H=${rounded.h}`
 			return false
 		}
 
+		async function addMask(event) {
+			const [file] = document.querySelector("#maskFile").files;
+			if (file) {
+				const img = await invertMask(file);
+				console.log(img)
+				//document.querySelector("#rect").style.maskImage = `url("${url}")`
+				document.querySelector("#mask").src = img.url;
+				selectionState.mask = true;
+				selectionState.maskSize = {w: img.w, h: img.h};
+			}
+		}
+
+		async function invertMask(file) {
+			const url = URL.createObjectURL(file);
+
+			const img = await new Promise((res, rej) => {
+				const i = new Image();
+				i.onload = () => res(i);
+				i.onerror = rej;
+				i.src = url;
+			});
+			URL.revokeObjectURL(url);
+
+			const canvas = document.createElement('canvas');
+			canvas.width = img.width;
+			canvas.height = img.height;
+			const ctx = canvas.getContext('2d');
+			ctx.drawImage(img, 0, 0);
+
+			const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+			for (let i = 0; i < imageData.data.length; i += 4) {
+				// turn to black:
+				imageData.data[0] = 200;
+				imageData.data[1] = 0;
+				imageData.data[2] = 0;
+				// invert alpha:
+				imageData.data[i+3] = 255 - imageData.data[i+3];
+			}
+			ctx.putImageData(imageData, 0, 0);
+
+			return new Promise(res => canvas.toBlob(blob => res({url: URL.createObjectURL(blob), w: img.width, h: img.height})));
+		}
+
 		window.onload = function(){
+			document.querySelector("#previewMask").addEventListener("click", addMask)
 			document.querySelector("#detectCameras").addEventListener("click", detectCamerasClick)
 			document.querySelector("#stream").addEventListener("click", updateStreamRect)
 
@@ -148,7 +228,13 @@ RECT_H=${rounded.h}`
 		#rect {
 			position: absolute;
 			border: 1px solid red;
+			pointer-events: none;
 		}
+
+		#rect img {
+			position: absolute;
+			pointer-events: none;
+    }
 
 		#grid {
 			position: absolute;
@@ -157,7 +243,6 @@ RECT_H=${rounded.h}`
 			left: 0;
 			width: 100%;
 			height: 100%;
-			
 			opacity: 0.8;
 			background-image:  linear-gradient(#3366ff 1px, transparent 1px), linear-gradient(to right, #3366ff 1px, transparent 1px);
 			background-size: 50px 50px;
@@ -173,12 +258,17 @@ RECT_H=${rounded.h}`
 	<h1>Trainbot Confighelper</h1>
 	<div>Click on the video (twice) to select a rectangle.</div>
 	<div id="container">
-		<div id="rect"></div>
+		<div id="rect">
+			<img id="mask">
+		</div>
 		<div id="grid"></div>
 		<img id="stream" src="stream.mjpeg" />
 	</div>
 	<pre id="rectOptions"></pre>
 	<pre id="rectOptionsEnv"></pre>
+	<p>
+		<input type="file" name="mask" id="maskFile"><button id="previewMask">Preview mask</button>
+	</p>
 	<button id="detectCameras">Detect v4l cameras</button>
 	<pre id="cameraOptions"></pre>
 </body>
