@@ -1,6 +1,6 @@
 # Onlytrains
 
-**⚠️ Onlytrains is no longer being maintained due to time constraints. The frontend, with some archived data still available, is at https://trains.jo-m.ch. ⚠️**
+**⚠️ Onlytrains is no longer being maintained due to time constraints. The frontend, with some archived data still available, is at <https://trains.jo-m.ch>. ⚠️**
 
 Other deployments:
 
@@ -20,9 +20,9 @@ The name Onlytrains is credited to [@timethy](https://github.com/timethy).
 
 It also contains some packages which might be useful for other purposes:
 
-* [pkg/pmatch](pkg/pmatch/pkg.go): Image patch matching
-* [pkg/ransac](pkg/ransac/ransac.go): RANSAC algorithm implementation
-* [pkg/vk](pkg/vk/pkg.go): Vulkan compute framework
+- [pkg/pmatch](pkg/pmatch/pkg.go): Image patch matching
+- [pkg/ransac](pkg/ransac/ransac.go): RANSAC algorithm implementation
+- [pkg/vk](pkg/vk/pkg.go): Vulkan compute framework
 
 The binaries are currently built and tested on X86_64 and a Raspberry Pi 4 B.
 
@@ -41,9 +41,9 @@ The assumptions are (there might be more implicit ones):
 1. Trains have a given min and max speed (configurable).
 1. We are looking at the tracks more or less perpendicularly in the chosen image crop region.
 1. Trains are coming from one direction at a time, crossings are not handled properly
-  1. In practice, they happen and lead to the result of one train being chopped up, e.g. https://trains.jo-m.ch/#/trains/19212.
+1. In practice, they happen and lead to the result of one train being chopped up, e.g. <https://trains.jo-m.ch/#/trains/19212>.
 1. Trains have a constant acceleration (might be 0) and do not stop and turn around while in front of the camera.
-  1. In reality, this is often not true, there happens to be a stop signal right in front of my balcony...
+1. In reality, this is often not true, there happens to be a stop signal right in front of my balcony...
 
 ## Documentation
 
@@ -65,7 +65,7 @@ How to get binaries?
 There are multiple options:
 
 1. `go install jo-m.ch/go/trainbot/cmd/trainbot@latest`
-2. Grab a binary from the latest CI run at https://github.com/jo-m/trainbot/actions
+2. Grab a binary from the latest CI run at <https://github.com/jo-m/trainbot/actions>
 3. Build via tooling in this repo - see [Development](#development)
 
 ### Raspberry Pi
@@ -156,12 +156,12 @@ Distance from camera to tracks is ca. 50m.
 
 All this is installed on my balcony in a waterproof case, as seen in the [MagPi Magazine](https://magpi.raspberrypi.com/issues/131).
 
-The case is this one from AliExpress: https://www.aliexpress.com/item/1005003010275396.html
+The case is this one from AliExpress: <https://www.aliexpress.com/item/1005003010275396.html>
 
 #### 3D Prints
 
-- Mounting plate for Camera: https://www.tinkercad.com/things/1FowVwonymJ
-- Mounting plate for Raspberry Pi: https://www.tinkercad.com/things/djlEF6oQSY1
+- Mounting plate for Camera: <https://www.tinkercad.com/things/1FowVwonymJ>
+- Mounting plate for Raspberry Pi: <https://www.tinkercad.com/things/djlEF6oQSY1>
 - The prints were ordered from JLCPCB.
 
 **Errata (not corrected in the models linked above):**
@@ -295,14 +295,15 @@ If you end up with black artifacts, the pillar you let through is too small for 
 
 ## Code notes
 
-* Zerolog is used as logging framework
-* "Library" code uses `panic()`, "application" code use `log.Panic()...`
+- Zerolog is used as logging framework
+- "Library" code uses `panic()`, "application" code use `log.Panic()...`
 
 ## Prometheus metrics/Grafana
 
 For debugging and tweaking a [Prometheus](https://prometheus.io/)-compatible endpoint can be exposed at port 18963 using `--prometheus=true`. A [Grafana dashboard](grafana/Onlytrains-dashboard.json) is also available.
 
 ## Flow chart for frame data
+
 ```
 
            libcamera-vid
@@ -345,7 +346,7 @@ For debugging and tweaking a [Prometheus](https://prometheus.io/)-compatible end
 
 - [ ] Replace deprecated `s.cam.GetOutput()`
 - [ ] Fix false positives in darkness
-- [ ] Add machine learning to classify trains (MobileNet, EfficientNet, https://mediapipe-studio.webapps.google.com/demo/image_classifier)
+- [ ] Add machine learning to classify trains (MobileNet, EfficientNet, <https://mediapipe-studio.webapps.google.com/demo/image_classifier>)
 - [ ] Remote blob cleanup is broken due to FTP LIST being restricted to 99998 entries by remote - use sftp instead
 - [ ] Select image processing methods depending on build tags (Vulkan)
-- [ ] Maybe use some stuff from https://daniel.lawrence.lu/blog/y2025m09d21/
+- [ ] Maybe use some stuff from <https://daniel.lawrence.lu/blog/y2025m09d21/>
