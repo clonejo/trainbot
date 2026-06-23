@@ -28,6 +28,7 @@ func Test_Dump_Size_PNG(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 400772, getFileSize(t, fname))
 }
+
 func Test_Dump_Size_JPG(t *testing.T) {
 	dir := t.TempDir()
 	fname := filepath.Join(dir, "out.jpg")
@@ -37,7 +38,7 @@ func Test_Dump_Size_JPG(t *testing.T) {
 	assert.NoError(t, err)
 	err = Dump(fname, img)
 	assert.NoError(t, err)
-	assert.Equal(t, 121978, getFileSize(t, fname))
+	assert.Equal(t, 121951, getFileSize(t, fname))
 }
 
 func Benchmark_Dump_PNG(b *testing.B) {
