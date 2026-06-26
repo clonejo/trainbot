@@ -40,6 +40,7 @@ test_more:
 	# This needs additional test data which is not committed to the repo.
 	# Instructions:
 	#	curl -o internal/pkg/stitch/testdata/more-testdata.zip https://trains.jo-m.ch/testdata.zip
+	#	(cd internal/pkg/stitch/testdata/ && sha256sum --check more-testdata.zip.sha256)
 	#	unzip -d internal/pkg/stitch/testdata internal/pkg/stitch/testdata/more-testdata.zip
 	go test -v --tags=$(GO_BUILD_TAGS) -timeout=30m -run Test_AutoStitcher_Set ./...
 
