@@ -106,7 +106,7 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 
 ### Phase 0 — Scaffolding, build target, and gates
 **Work**
-- [ ] Cargo workspace + module skeleton above
+- [x] Cargo workspace + module skeleton above *(cv crates only so far; bin/ and tests/ added as later phases need them)*
 - [ ] Extend the repo's Nix flake: Rust toolchain + musl cross + `cc` + `libclang` + target `videodev2.h`
 - [ ] CI matrix: static binaries for `x86_64-unknown-linux-musl` and `aarch64-unknown-linux-musl`
 - [ ] Stand up the conformance harness skeleton (can run the Go reference binary)
@@ -117,17 +117,27 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 
 ### Phase 1 — Pure CV kernels (`cv` crate)
 **Work**
-- [ ] Port `pmatch` C kernel → safe Rust + `rayon` (replace OpenMP)
-- [ ] Replace `#pragma omp critical` max-update with a deterministic parallel reduction over `(cos2, x, y)`, **matching Go's tie-break** (first max under strict `>`, scan `y` outer then `x` inner → prefer lowest `(y, x)`)
-- [ ] Port `avg` C kernel → safe Rust + `rayon`
-- [ ] Port `ransac`
+- [x] Port `pmatch` C kernel → safe Rust + `rayon` (replace OpenMP)
+- [x] Replace `#pragma omp critical` max-update with a deterministic parallel reduction over `(cos2, x, y)`, **matching Go's tie-break** (first max under strict `>`, scan `y` outer then `x` inner → prefer lowest `(y, x)`)
+- [x] Port `avg` C kernel → safe Rust + `rayon`
+- [x] Port `ransac`
 
 **Verify**
-- [ ] Unit tests against Go test vectors (numeric equivalence within tolerance)
+- [x] Unit tests against Go test vectors (numeric equivalence within tolerance)
 - [ ] `criterion` benchmarks vs the OpenMP C (no perf regression)
 
 **Exit criteria**
 - [ ] Kernels match Go outputs; no perf regression; zero I/O in this crate
+
+**Implementation notes**
+
+*pmatch* — `compute_cos2` is a direct translation of the C kernel (integer accumulation of `dot`, `absI2`, `absP2`). Rayon parallelizes over rows; the x-scan within each row is sequential so the strict `>` update naturally picks the lowest x on a tie. The inter-row reduction also enforces lowest `(y, x)` on equal cos².
+
+*avg* — Two rayon passes using `par_chunks(4)` over the raw byte buffer (no padding in `image::RgbaImage`). Integer-truncating division for the per-channel mean matches Go/C exactly.
+
+*ransac* — Uses Levenberg-Marquardt with numerical Jacobian (nalgebra SVD solve). `rand::SmallRng` seeded from `MetaParams::seed`. The RNG stream differs from Go's `math/rand`, but the algorithm still converges to the correct parameters within the Go test tolerances.
+
+*avg test data* — Go's `image/jpeg` and Rust's `zune-jpeg` decode the same JPEG to different pixel values (different DCT rounding). Solution: saved `pkg/avg/testdata/{high,mid,low}.png` using Go's decoder; Rust tests load those PNGs so both operate on bit-identical pixel data. Tolerances are tight (1e-5) since the arithmetic is integer-exact.
 
 ### Phase 2 — Image utils, datastore, DB (`imutil`, `store`)
 **Work**
@@ -244,7 +254,7 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 ## Milestone checklist (one line per phase)
 
 - [ ] **Phase 0** — Workspace + musl static build + conformance harness + no-dynamic-C gate
-- [ ] **Phase 1** — Pure CV kernels (pmatch/avg/ransac) on rayon, validated against Go vectors
+- [x] **Phase 1** — Pure CV kernels (pmatch/avg/ransac) on rayon, validated against Go vectors *(criterion benchmarks pending)*
 - [ ] **Phase 2** — imutil + datastore + rusqlite(bundled) with the embedded idempotent schema
 - [ ] **Phase 3** — FrameSource: ffmpeg / v4l2(raw) / rpicam-vid, all subprocess or syscall
 - [ ] **Phase 4** — Threaded stitch pipeline, validated against the set0 expected numbers

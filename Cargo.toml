@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "crates/cv/pmatch",
+    "crates/cv/avg",
+    "crates/cv/ransac",
+]
+resolver = "2"
+
+[workspace.dependencies]
+image = { version = "0.25", default-features = false }
+rayon = "1"
+
+[profile.release]
+debug = "line-tables-only"
