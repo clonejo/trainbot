@@ -106,9 +106,16 @@ pub fn search_rgba(img: &image::RgbaImage, pat: &image::RgbaImage) -> (u32, u32,
 mod tests {
     use super::*;
 
-    fn load_bird() -> image::RgbaImage {
+    fn load_bird_jpg() -> image::RgbaImage {
         let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../../pkg/pmatch/testdata/bird.jpg");
+        image::open(path).unwrap().to_rgba8()
+    }
+
+    /// PNG saved by Go's decoder — pixel-identical to Go's test images.
+    fn load_bird_png() -> image::RgbaImage {
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../pkg/pmatch/testdata/bird.png");
         image::open(path).unwrap().to_rgba8()
     }
 
@@ -120,7 +127,7 @@ mod tests {
 
     #[test]
     fn test_score_rgba_cos_perfect() {
-        let img = load_bird();
+        let img = load_bird_jpg();
         let pat = image::imageops::crop_imm(&img, X0, Y0, W, H).to_image();
         let score = score_rgba_cos(&img, &pat, X0, Y0);
         assert!((score - 1.0).abs() < 1e-14, "score={score}");
@@ -128,7 +135,7 @@ mod tests {
 
     #[test]
     fn test_score_rgba_cos_offsets() {
-        let img = load_bird();
+        let img = load_bird_jpg();
         let pat = image::imageops::crop_imm(&img, X0, Y0, W, H).to_image();
         let s0 = score_rgba_cos(&img, &pat, X0, Y0);
         let s1 = score_rgba_cos(&img, &pat, X0 + 1, Y0);
@@ -141,9 +148,31 @@ mod tests {
         assert!(s4 < s3, "larger shift should score even lower");
     }
 
+    /// Cross-check against Go's ScoreRGBACosSlow using PNG saved by Go's jpeg decoder.
+    /// PNG is lossless, so both sides operate on bit-identical pixels.
+    /// Expected values: Go ScoreRGBACosSlow(img, pat, offset) on the same PNG.
+    #[test]
+    fn test_score_rgba_cos_known_offset() {
+        let img = load_bird_png();
+        let pat = image::imageops::crop_imm(&img, X0, Y0, W, H).to_image();
+
+        let cases: &[(u32, u32, f64)] = &[
+            (X0 + 1, Y0,      0.98092240051266510470),
+            (X0,     Y0 + 10, 0.81870046304467325449),
+            (X0 + 3, Y0 + 3,  0.92604611293029015506),
+        ];
+        for &(x, y, want) in cases {
+            let got = score_rgba_cos(&img, &pat, x, y);
+            assert!(
+                (got - want).abs() < 1e-12,
+                "score_rgba_cos at ({x},{y}): got {got:.20}, want {want:.20}"
+            );
+        }
+    }
+
     #[test]
     fn test_search_rgba() {
-        let img = load_bird();
+        let img = load_bird_jpg();
         let pat = image::imageops::crop_imm(&img, X0, Y0, W, H).to_image();
         let (x, y, score) = search_rgba(&img, &pat);
         assert!((score - 1.0).abs() < 1e-14, "score={score}");
