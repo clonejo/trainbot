@@ -3,6 +3,8 @@ members = [
     "crates/cv/pmatch",
     "crates/cv/avg",
     "crates/cv/ransac",
+    "bin/trainbot",
+    "tests/conformance",
 ]
 resolver = "2"
 

@@ -141,6 +141,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
+name = "conformance"
+version = "0.1.0"
+
+[[package]]
 name = "crc32fast"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -774,6 +778,10 @@ dependencies = [
  "serde",
  "serde_json",
 ]
+
+[[package]]
+name = "trainbot"
+version = "0.1.0"
 
 [[package]]
 name = "typenum"

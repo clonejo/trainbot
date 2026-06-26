@@ -107,13 +107,13 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 ### Phase 0 — Scaffolding, build target, and gates
 **Work**
 - [x] Cargo workspace + module skeleton above *(cv crates only so far; bin/ and tests/ added as later phases need them)*
-- [ ] Extend the repo's Nix flake: Rust toolchain + musl cross + `cc` + `libclang` + target `videodev2.h`
-- [ ] CI matrix: static binaries for `x86_64-unknown-linux-musl` and `aarch64-unknown-linux-musl`
-- [ ] Stand up the conformance harness skeleton (can run the Go reference binary)
-- [ ] **Static-binary gate:** CI asserts no dynamic deps (`ldd` → "not a dynamic executable" / no `NEEDED`)
+- [x] Extend the repo's Nix flake: Rust toolchain + musl cross + `cc` + `libclang` + target `videodev2.h`
+- [x] CI matrix: static binaries for `x86_64-unknown-linux-musl` and `aarch64-unknown-linux-musl`
+- [x] Stand up the conformance harness skeleton (can run the Go reference binary)
+- [x] **Static-binary gate:** CI asserts no dynamic deps (`ldd` → "not a dynamic executable" / no `NEEDED`)
 
 **Exit criteria**
-- [ ] Empty binaries build static on both arches; gate green; harness can invoke the Go oracle
+- [x] Empty binaries build static on both arches; gate green; harness can invoke the Go oracle
 
 ### Phase 1 — Pure CV kernels (`cv` crate)
 **Work**
@@ -258,7 +258,7 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 
 ## Milestone checklist (one line per phase)
 
-- [ ] **Phase 0** — Workspace + musl static build + conformance harness + no-dynamic-C gate
+- [x] **Phase 0** — Workspace + musl static build + conformance harness + no-dynamic-C gate
 - [x] **Phase 1** — Pure CV kernels (pmatch/avg/ransac) on rayon, validated against Go vectors
 - [ ] **Phase 2** — imutil + datastore + rusqlite(bundled) with the embedded idempotent schema
 - [ ] **Phase 3** — FrameSource: ffmpeg / v4l2(raw) / rpicam-vid, all subprocess or syscall
