@@ -1,3 +1,4 @@
+use image::RgbaImage;
 use rayon::prelude::*;
 
 /// cos² of the cosine similarity between the patch at `(ox, oy)` in `img` and `pat`.
@@ -7,10 +8,8 @@ fn compute_cos2(
     img_stride: usize,
     pat: &[u8],
     pat_stride: usize,
-    ox: usize,
-    oy: usize,
-    pat_w: usize,
-    pat_h: usize,
+    (ox, oy): (usize, usize),
+    (pat_w, pat_h): (usize, usize),
 ) -> f64 {
     let mut dot: u64 = 0;
     let mut abs_i2: u64 = 0;
@@ -39,16 +38,14 @@ fn compute_cos2(
 }
 
 /// Cosine similarity of `pat` placed at offset `(ox, oy)` in `img`. Alpha ignored.
-pub fn score_rgba_cos(img: &image::RgbaImage, pat: &image::RgbaImage, ox: u32, oy: u32) -> f64 {
+pub fn score_rgba_cos(img: &RgbaImage, pat: &RgbaImage, ox: u32, oy: u32) -> f64 {
     compute_cos2(
         img.as_raw(),
         img.width() as usize * 4,
         pat.as_raw(),
         pat.width() as usize * 4,
-        ox as usize,
-        oy as usize,
-        pat.width() as usize,
-        pat.height() as usize,
+        (ox as usize, oy as usize),
+        (pat.width() as usize, pat.height() as usize),
     )
     .sqrt()
 }
@@ -57,7 +54,7 @@ pub fn score_rgba_cos(img: &image::RgbaImage, pat: &image::RgbaImage, ox: u32, o
 ///
 /// Returns `(x, y, cos)`. On tied cos², the position with the lowest `(y, x)` wins,
 /// matching Go's serial scan order (`y` outer, `x` inner, strict `>`).
-pub fn search_rgba(img: &image::RgbaImage, pat: &image::RgbaImage) -> (u32, u32, f64) {
+pub fn search_rgba(img: &RgbaImage, pat: &RgbaImage) -> (u32, u32, f64) {
     let img_w = img.width() as usize;
     let img_h = img.height() as usize;
     let pat_w = pat.width() as usize;
@@ -81,7 +78,14 @@ pub fn search_rgba(img: &image::RgbaImage, pat: &image::RgbaImage) -> (u32, u32,
             let mut row_cos2 = -1.0f64;
             let mut row_x = 0usize;
             for x in 0..search_w {
-                let cos2 = compute_cos2(img_raw, img_stride, pat_raw, pat_stride, x, y, pat_w, pat_h);
+                let cos2 = compute_cos2(
+                    img_raw,
+                    img_stride,
+                    pat_raw,
+                    pat_stride,
+                    (x, y),
+                    (pat_w, pat_h),
+                );
                 if cos2 > row_cos2 {
                     row_cos2 = cos2;
                     row_x = x;
@@ -104,18 +108,22 @@ pub fn search_rgba(img: &image::RgbaImage, pat: &image::RgbaImage) -> (u32, u32,
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
+    use image::RgbaImage;
+
     use super::*;
 
-    fn load_bird_jpg() -> image::RgbaImage {
-        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../../pkg/pmatch/testdata/bird.jpg");
+    fn load_bird_jpg() -> RgbaImage {
+        let path =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../pkg/pmatch/testdata/bird.jpg");
         image::open(path).unwrap().to_rgba8()
     }
 
     /// PNG saved by Go's decoder — pixel-identical to Go's test images.
-    fn load_bird_png() -> image::RgbaImage {
-        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../../pkg/pmatch/testdata/bird.png");
+    fn load_bird_png() -> RgbaImage {
+        let path =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../pkg/pmatch/testdata/bird.png");
         image::open(path).unwrap().to_rgba8()
     }
 
@@ -157,9 +165,9 @@ mod tests {
         let pat = image::imageops::crop_imm(&img, X0, Y0, W, H).to_image();
 
         let cases: &[(u32, u32, f64)] = &[
-            (X0 + 1, Y0,      0.98092240051266510470),
-            (X0,     Y0 + 10, 0.81870046304467325449),
-            (X0 + 3, Y0 + 3,  0.92604611293029015506),
+            (X0 + 1, Y0, 0.980_922_400_512_665_1),
+            (X0, Y0 + 10, 0.818_700_463_044_673_3),
+            (X0 + 3, Y0 + 3, 0.926_046_112_930_290_2),
         ];
         for &(x, y, want) in cases {
             let got = score_rgba_cos(&img, &pat, x, y);

@@ -20,5 +20,8 @@ fn main() {
         go_bin
     );
 
-    println!("Phase 0 conformance OK: Go oracle at {:?} is runnable", go_bin);
+    println!(
+        "Phase 0 conformance OK: Go oracle at {:?} is runnable",
+        go_bin
+    );
 }

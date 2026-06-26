@@ -51,22 +51,6 @@ pub fn rgba(img: &image::RgbaImage) -> ([f64; 3], [f64; 3]) {
 mod tests {
     use super::*;
 
-    /// Load a PNG generated from the Go test images (Go's jpeg decoder → PNG write).
-    /// PNG is lossless so both decoders produce bit-identical pixel data.
-    fn load_png(name: &str) -> image::RgbaImage {
-        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../../pkg/avg/testdata")
-            .join(name);
-        image::open(path).unwrap().to_rgba8()
-    }
-
-    fn assert_near(got: f64, want: f64, tol: f64, label: &str) {
-        assert!(
-            (got - want).abs() <= tol,
-            "{label}: got {got}, want {want} ± {tol}"
-        );
-    }
-
     // Expected values computed by Go from the same PNG pixel data.
     // Tolerances are tight because all arithmetic is integer-exact.
 
@@ -101,5 +85,21 @@ mod tests {
         assert_near(dev[0], 0.003860, 1e-5, "low dev R");
         assert_near(dev[1], 0.002980, 1e-5, "low dev G");
         assert_near(dev[2], 0.002277, 1e-5, "low dev B");
+    }
+
+    /// Load a PNG generated from the Go test images (Go's jpeg decoder → PNG write).
+    /// PNG is lossless so both decoders produce bit-identical pixel data.
+    fn load_png(name: &str) -> image::RgbaImage {
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../pkg/avg/testdata")
+            .join(name);
+        image::open(path).unwrap().to_rgba8()
+    }
+
+    fn assert_near(got: f64, want: f64, tol: f64, label: &str) {
+        assert!(
+            (got - want).abs() <= tol,
+            "{label}: got {got}, want {want} ± {tol}"
+        );
     }
 }
