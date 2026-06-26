@@ -126,11 +126,11 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 - [x] `pmatch`/`avg` unit tests: numeric equivalence against Go test vectors (tight tolerances)
 - [x] `ransac` unit tests: convergence to same parameter values within Go tolerances (not bit-identical — RNG/optimizer differ; see impl notes)
 - [x] `score_rgba_cos` cross-check: verify float output matches Go's `ScoreRGBACosSlow` at a known non-perfect offset (PNG saved from Go's decoder; 3 offsets checked at 1e-12 tolerance)
-- [ ] `criterion` benchmarks vs the OpenMP C (no perf regression)
+- [x] `criterion` benchmarks vs the OpenMP C (no perf regression) — 3.14 ms vs 5.36 ms (Go/C+OpenMP), ~1.7× faster on x86_64 Ryzen 9 5950X
 
 **Exit criteria**
 - [x] Kernels match Go outputs; zero I/O in this crate
-- [ ] No perf regression (blocked on criterion benchmarks above)
+- [x] No perf regression (Rust/rayon ~1.7× faster than C+OpenMP on x86_64)
 
 **Implementation notes**
 
@@ -259,7 +259,7 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 ## Milestone checklist (one line per phase)
 
 - [ ] **Phase 0** — Workspace + musl static build + conformance harness + no-dynamic-C gate
-- [ ] **Phase 1** — Pure CV kernels (pmatch/avg/ransac) on rayon, validated against Go vectors *(score_rgba_cos cross-check vector + criterion benchmarks pending)*
+- [x] **Phase 1** — Pure CV kernels (pmatch/avg/ransac) on rayon, validated against Go vectors
 - [ ] **Phase 2** — imutil + datastore + rusqlite(bundled) with the embedded idempotent schema
 - [ ] **Phase 3** — FrameSource: ffmpeg / v4l2(raw) / rpicam-vid, all subprocess or syscall
 - [ ] **Phase 4** — Threaded stitch pipeline, validated against the set0 expected numbers
