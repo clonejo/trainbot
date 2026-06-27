@@ -162,17 +162,25 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 
 ### Phase 3 — Video/camera sources (`vid` crate)
 **Work**
-- [ ] Define a `FrameSource` trait
-- [ ] file → `ffmpeg` subprocess (honor pixel format / size)
-- [ ] USB cam → `v4l` (default `v4l2` feature, raw ioctls), honoring `--camera-format-fourcc/-w/-h`
-- [ ] `picam3` → `rpicam-vid` subprocess, honoring `--rotate-180`
+- [x] Define a `FrameSource` trait (`lib.rs`: `next_frame`, `fps`, `is_live`)
+- [x] file → `ffmpeg` subprocess (honor pixel format / size) — `FileSrc` via `ffprobe` + `ffmpeg -f rawvideo -pix_fmt rgba`
+- [x] USB cam → `v4l` (default `v4l2` feature, raw ioctls), honoring `--camera-format-fourcc/-w/-h` — `CamSrc` + `detect_cams`; supports MJPG and YUYV; background capture thread with 4-slot sync channel
+- [x] `picam3` → `rpicam-vid` subprocess, honoring `--rotate-180` — `PiCam3Src`; supports MJPEG (via `JpegScanner`) and YUV420; `FourCC` type + `convert` helpers
+- [x] `JpegScanner` ported from `pkg/vid/jpegscan.go` (MJPEG stream byte-level scanner with RST/stuffed-zero handling)
 
 **Verify**
-- [ ] Decode the set0 mp4s; compare frame counts/dimensions to Go
-- [ ] Re-run the static gate (proves the `v4l` default feature added no link)
+- [x] `day.mp4` → 86 frames (±1) asserted in `file::tests::file_src_day_frame_count`
+- [ ] `night`/`rain`/`snow` mp4s frame counts not yet tested (plan requires all four set0 videos)
+- [ ] Static gate re-run after adding `v4l` dependency not explicitly verified in CI
 
 **Exit criteria**
 - [ ] All three sources produce frames matching Go; gate green
+
+**Implementation notes**
+
+*v4l feature hygiene* — `Cargo.toml` uses `v4l = { version = "0.14", default-features = true }`. The crate's actual default is `["v4l2"]`; `libv4l` is opt-in only. Change to `default-features = false, features = ["v4l2"]` to make the invariant explicit and guard against future crate default changes.
+
+*`SrcBuf` not ported yet* — Go's `srcBuf.go` wraps any `Src` with a 200-frame channel, drop-on-full for live sources, and a `maxFailedFrames` restart guard. The Rust `CamSrc` captures in a background thread with a 4-slot channel (sufficient for now). A proper `SrcBuf` / frame-drop policy belongs in Phase 4 (`core`) alongside the rest of the pipeline.
 
 ### Phase 4 — Stitch pipeline (`core`)
 **Work**
@@ -260,7 +268,7 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 - [x] **Phase 0** — Workspace + musl static build + conformance harness + no-dynamic-C gate
 - [x] **Phase 1** — Pure CV kernels (pmatch/avg/ransac) on rayon, validated against Go vectors
 - [x] **Phase 2** — imutil + datastore + rusqlite(bundled) with the embedded idempotent schema
-- [ ] **Phase 3** — FrameSource: ffmpeg / v4l2(raw) / rpicam-vid, all subprocess or syscall
+- [~] **Phase 3** — FrameSource: ffmpeg / v4l2(raw) / rpicam-vid implemented; missing: night/rain/snow frame-count tests, explicit v4l2 feature pin, static gate re-check
 - [ ] **Phase 4** — Threaded stitch pipeline, validated against the set0 expected numbers
 - [ ] **Phase 5** — tracing + Prometheus (exact metrics) + temperature
 - [ ] **Phase 6** — clap + multi-call binary (detect/confighelper/cleanup), full flag/env parity
