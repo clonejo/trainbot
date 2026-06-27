@@ -28,7 +28,7 @@ impl DataStore {
     }
 
     pub fn blob_thumb_path(&self, name: &str) -> Utf8PathBuf {
-        self.blob_path(&thumb_name(name))
+        self.blob_path(thumb_name(name))
     }
 }
 

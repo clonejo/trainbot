@@ -10,7 +10,7 @@ rayon = { workspace = true }
 [dev-dependencies]
 camino = { workspace = true }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]
 name = "bench"

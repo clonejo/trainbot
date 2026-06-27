@@ -1,5 +1,5 @@
 use nalgebra::{DMatrix, DVector};
-use rand::{Rng, SeedableRng as _};
+use rand::{Rng, RngExt as _, SeedableRng as _};
 
 #[derive(Debug)]
 pub enum Error {
@@ -30,7 +30,7 @@ fn sample(rng: &mut impl Rng, x: &[f64], y: &[f64], n: usize) -> (Vec<f64>, Vec<
     let mut xs = Vec::with_capacity(n);
     let mut ys = Vec::with_capacity(n);
     while xs.len() < n {
-        let i = rng.gen_range(0..x.len());
+        let i = rng.random_range(0..x.len());
         if !used[i] {
             used[i] = true;
             xs.push(x[i]);
