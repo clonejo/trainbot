@@ -122,9 +122,11 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Install clang for bindgen (v4l2-sys, rusqlite bundled)
-        run: sudo apt-get install -y clang libclang-dev linux-libc-dev
+        run: sudo apt-get install -y clang libclang-dev linux-libc-dev ffmpeg
       - name: Test CV crates
         run: cargo test -p pmatch -p avg -p ransac
+      - name: Test vid crate
+        run: cargo test -p vid
 
   rust_conformance:
     runs-on: ubuntu-latest
