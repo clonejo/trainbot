@@ -46,6 +46,34 @@ RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
         ffmpeg                                              \
         unzip
 
+# Install Rust build dependencies:
+#   clang + libclang-dev  — bindgen (v4l2-sys, bundled SQLite)
+#   linux-libc-dev        — <linux/videodev2.h> for v4l2-sys
+#   musl-tools            — musl-gcc for x86_64-unknown-linux-musl target
+# Bookworm ships LLVM/clang 14; adjust LIBCLANG_PATH if upgrading the base image.
+RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+    --mount=target=/var/cache/apt,type=cache,sharing=locked \
+    apt-get update                                       && \
+    apt-get install -yq                                     \
+        clang                                               \
+        libclang-dev                                        \
+        linux-libc-dev                                      \
+        musl-tools
+
+# Install Rust toolchain globally so it is available to the build user.
+# CARGO_HOME/RUSTUP_HOME under /usr/local are made world-writable so the
+# unprivileged build user can download crates at build time.
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    LIBCLANG_PATH=/usr/lib/llvm-14/lib
+ENV PATH=/usr/local/cargo/bin:${PATH}
+COPY rust-toolchain.toml /tmp/rust-toolchain.toml
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+        sh -s -- -y --no-modify-path --profile minimal --default-toolchain none && \
+    cd /tmp && rustup show                               && \
+    rustup target add x86_64-unknown-linux-musl          && \
+    chmod -R a+rw /usr/local/rustup /usr/local/cargo
+
 # Add unprivileged build user
 RUN adduser --gecos '' --disabled-password build
 RUN     mkdir -p /src /build                             && \

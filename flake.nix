@@ -83,6 +83,8 @@
       XDG_DATA_DIRS = builtins.getEnv "XDG_DATA_DIRS";
       XDG_RUNTIME_DIR = "/run/user/1000";
       LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
+      # Required so bindgen (v4l2-sys, rusqlite) finds <linux/videodev2.h>
+      BINDGEN_EXTRA_CLANG_ARGS = "-isystem ${pkgs.linux-headers-libre}/include";
     };
   };
 }

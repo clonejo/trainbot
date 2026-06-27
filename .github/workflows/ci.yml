@@ -121,6 +121,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      - name: Install clang for bindgen (v4l2-sys, rusqlite bundled)
+        run: sudo apt-get install -y clang libclang-dev linux-libc-dev
       - name: Test CV crates
         run: cargo test -p pmatch -p avg -p ransac
 
