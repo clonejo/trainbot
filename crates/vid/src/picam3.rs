@@ -9,7 +9,7 @@ const SENSOR_W: u32 = 2304;
 const SENSOR_H: u32 = 1296;
 
 pub struct PiCam3Config {
-    /// ROI within the sensor (defaults to full sensor if all-zero).
+    /// ROI within the sensor (defaults to full sensor if all-zero). (ROI = region of interest)
     pub roi_x: u32,
     pub roi_y: u32,
     pub width: u32,
