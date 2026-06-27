@@ -24,7 +24,7 @@ criterion_group!(benches, bench_score, bench_search);
 criterion_main!(benches);
 
 fn load_bird() -> image::RgbaImage {
-    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let path = camino::Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../../pkg/pmatch/testdata/bird.jpg");
-    image::open(path).unwrap().to_rgba8()
+    image::open(&path).unwrap().to_rgba8()
 }

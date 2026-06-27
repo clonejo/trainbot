@@ -23,8 +23,9 @@ impl Train {
 fn parse_train(row: &Row<'_>) -> SqlResult<Train> {
     let id: i64 = row.get(0)?;
     let ts_str: String = row.get(1)?;
-    let start_ts = parse_db_ts(&ts_str)
-        .map_err(|e| rusqlite::Error::FromSqlConversionFailure(1, rusqlite::types::Type::Text, Box::new(e)))?;
+    let start_ts = parse_db_ts(&ts_str).map_err(|e| {
+        rusqlite::Error::FromSqlConversionFailure(1, rusqlite::types::Type::Text, Box::new(e))
+    })?;
     Ok(Train { id, start_ts })
 }
 
@@ -123,13 +124,15 @@ mod tests {
     }
 
     fn temp_conn() -> Connection {
-        let dir = std::env::temp_dir().join(format!(
-            "store_q_{}",
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .subsec_nanos()
-        ));
+        let dir = camino::Utf8PathBuf::try_from(std::env::temp_dir())
+            .unwrap()
+            .join(format!(
+                "store_q_{}",
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .subsec_nanos()
+            ));
         std::fs::create_dir_all(&dir).unwrap();
         open(dir.join("test.db")).unwrap()
     }
@@ -242,7 +245,11 @@ mod tests {
         insert_train(&conn, &t0, 1, 1.0, 1.0, 0.0, 1.0).unwrap();
 
         let raw: String = conn
-            .query_row("SELECT start_ts FROM trains_v2 ORDER BY id DESC LIMIT 1", [], |r| r.get(0))
+            .query_row(
+                "SELECT start_ts FROM trains_v2 ORDER BY id DESC LIMIT 1",
+                [],
+                |r| r.get(0),
+            )
             .unwrap();
         assert_eq!(raw, "2023-06-10T16:20:58.805+02:00");
     }

@@ -1,11 +1,11 @@
-use std::path::PathBuf;
+use camino::Utf8PathBuf;
 use std::process::Command;
 
 fn main() {
     let go_bin = std::env::args()
         .skip(1)
         .find(|a| !a.starts_with('-'))
-        .map(PathBuf::from)
+        .map(Utf8PathBuf::from)
         .expect("usage: conformance <go-trainbot-binary>");
 
     let status = Command::new(&go_bin)

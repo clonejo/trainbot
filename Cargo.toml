@@ -11,6 +11,7 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
+camino = "1"
 image = { version = "0.25", default-features = false }
 rayon = "1"
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }

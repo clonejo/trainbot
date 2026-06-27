@@ -90,10 +90,10 @@ mod tests {
     /// Load a PNG generated from the Go test images (Go's jpeg decoder → PNG write).
     /// PNG is lossless so both decoders produce bit-identical pixel data.
     fn load_png(name: &str) -> image::RgbaImage {
-        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        let path = camino::Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../../pkg/avg/testdata")
             .join(name);
-        image::open(path).unwrap().to_rgba8()
+        image::open(&path).unwrap().to_rgba8()
     }
 
     fn assert_near(got: f64, want: f64, tol: f64, label: &str) {

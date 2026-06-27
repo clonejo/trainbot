@@ -8,4 +8,5 @@ image = { workspace = true }
 rayon = { workspace = true }
 
 [dev-dependencies]
+camino = { workspace = true }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }

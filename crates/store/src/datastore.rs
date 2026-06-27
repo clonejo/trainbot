@@ -1,31 +1,33 @@
-use std::path::{Path, PathBuf};
+use camino::{Utf8Path, Utf8PathBuf};
 
 const DB_FILE: &str = "db.sqlite3";
 const BLOBS_DIR: &str = "blobs";
 
 #[derive(Debug, Clone)]
 pub struct DataStore {
-    pub data_dir: PathBuf,
+    pub data_dir: Utf8PathBuf,
 }
 
 impl DataStore {
-    pub fn new(data_dir: impl Into<PathBuf>) -> Self {
-        Self { data_dir: data_dir.into() }
+    pub fn new(data_dir: impl Into<Utf8PathBuf>) -> Self {
+        Self {
+            data_dir: data_dir.into(),
+        }
     }
 
-    pub fn data_path(&self, rel: impl AsRef<Path>) -> PathBuf {
+    pub fn data_path(&self, rel: impl AsRef<Utf8Path>) -> Utf8PathBuf {
         self.data_dir.join(rel)
     }
 
-    pub fn db_path(&self) -> PathBuf {
+    pub fn db_path(&self) -> Utf8PathBuf {
         self.data_path(DB_FILE)
     }
 
-    pub fn blob_path(&self, name: impl AsRef<Path>) -> PathBuf {
+    pub fn blob_path(&self, name: impl AsRef<Utf8Path>) -> Utf8PathBuf {
         self.data_dir.join(BLOBS_DIR).join(name)
     }
 
-    pub fn blob_thumb_path(&self, name: &str) -> PathBuf {
+    pub fn blob_thumb_path(&self, name: &str) -> Utf8PathBuf {
         self.blob_path(&thumb_name(name))
     }
 }
@@ -53,7 +55,7 @@ pub fn revert_thumb_name(name: &str) -> String {
         None => return name.to_string(),
     };
     let without_last_ext = &name[..last_dot]; // "pic.thumb" or "blob"
-    let last_ext = &name[last_dot..];         // ".jpg" or ".thumb"
+    let last_ext = &name[last_dot..]; // ".jpg" or ".thumb"
 
     // second_ext: ".thumb" for "pic.thumb", "" for "blob"
     match without_last_ext.rfind('.') {
@@ -80,9 +82,15 @@ mod tests {
     #[test]
     fn datastore_paths() {
         let ds = DataStore::new("data");
-        assert_eq!(ds.db_path(), Path::new("data/db.sqlite3"));
-        assert_eq!(ds.blob_path("testblob"), Path::new("data/blobs/testblob"));
-        assert_eq!(ds.blob_thumb_path("testblob.jpg"), Path::new("data/blobs/testblob.thumb.jpg"));
+        assert_eq!(ds.db_path(), Utf8Path::new("data/db.sqlite3"));
+        assert_eq!(
+            ds.blob_path("testblob"),
+            Utf8Path::new("data/blobs/testblob")
+        );
+        assert_eq!(
+            ds.blob_thumb_path("testblob.jpg"),
+            Utf8Path::new("data/blobs/testblob.thumb.jpg")
+        );
     }
 
     #[test]

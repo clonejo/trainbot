@@ -108,23 +108,22 @@ pub fn search_rgba(img: &RgbaImage, pat: &RgbaImage) -> (u32, u32, f64) {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
+    use camino::Utf8PathBuf;
     use image::RgbaImage;
 
     use super::*;
 
     fn load_bird_jpg() -> RgbaImage {
-        let path =
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../pkg/pmatch/testdata/bird.jpg");
-        image::open(path).unwrap().to_rgba8()
+        let path = Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../pkg/pmatch/testdata/bird.jpg");
+        image::open(&path).unwrap().to_rgba8()
     }
 
     /// PNG saved by Go's decoder — pixel-identical to Go's test images.
     fn load_bird_png() -> RgbaImage {
-        let path =
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../pkg/pmatch/testdata/bird.png");
-        image::open(path).unwrap().to_rgba8()
+        let path = Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../pkg/pmatch/testdata/bird.png");
+        image::open(&path).unwrap().to_rgba8()
     }
 
     // Patch position and size matching Go's test constants.
