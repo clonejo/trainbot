@@ -1,7 +1,7 @@
 use crate::{Error, FourCC, Frame, FrameSource, Result, convert, jpeg_scan::JpegScanner};
+use duct::ReaderHandle;
 use image::RgbaImage;
 use std::io::{self, BufReader, Read};
-use std::process::{Child, ChildStdout, Command, Stdio};
 use std::time::SystemTime;
 
 /// Hardcoded sensor dimensions for the Raspberry Pi Camera Module v3.
@@ -22,9 +22,9 @@ pub struct PiCam3Config {
 }
 
 enum Inner {
-    Mjpeg(JpegScanner<ChildStdout>),
+    Mjpeg(JpegScanner<ReaderHandle>),
     Yuv420 {
-        stdout: BufReader<ChildStdout>,
+        stdout: BufReader<ReaderHandle>,
         buf: Vec<u8>,
     },
 }
@@ -33,7 +33,6 @@ pub struct PiCam3Src {
     w: u32,
     h: u32,
     fps: u32,
-    child: Child,
     inner: Inner,
 }
 
@@ -60,15 +59,11 @@ impl PiCam3Src {
             "--timeout=0".into(),
             "--inline".into(),
             "--nopreview".into(),
-            "--width".into(),
-            w.to_string(),
-            "--height".into(),
-            h.to_string(),
-            "--roi".into(),
-            roi,
+            format!("--width={w}"),
+            format!("--height={h}"),
+            format!("--roi={roi}"),
             format!("--mode={}:{}:12:P", SENSOR_W, SENSOR_H),
-            "--framerate".into(),
-            cfg.fps.to_string(),
+            format!("--framerate={}", cfg.fps),
             "--autofocus-mode=manual".into(),
             format!("--lens-position={:.6}", cfg.focus),
             "--output".into(),
@@ -94,24 +89,17 @@ impl PiCam3Src {
             }
         }
 
-        let mut child = Command::new("rpicam-vid")
-            .args(&args)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
+        let reader = duct::cmd("rpicam-vid", &args)
+            .stderr_null()
+            .reader()
             .map_err(|e| Error::Process(format!("failed to spawn rpicam-vid: {e}")))?;
 
-        let stdout = child
-            .stdout
-            .take()
-            .ok_or_else(|| Error::Process("no stdout from rpicam-vid".into()))?;
-
         let inner = if cfg.format == FourCC::MJPG {
-            Inner::Mjpeg(JpegScanner::new(stdout))
+            Inner::Mjpeg(JpegScanner::new(reader))
         } else {
             let buf_size = (w * h * 12 / 8) as usize; // YU12: w*h*1.5 bytes
             Inner::Yuv420 {
-                stdout: BufReader::new(stdout),
+                stdout: BufReader::new(reader),
                 buf: vec![0u8; buf_size],
             }
         };
@@ -120,7 +108,6 @@ impl PiCam3Src {
             w,
             h,
             fps: cfg.fps,
-            child,
             inner,
         })
     }
@@ -158,13 +145,6 @@ impl FrameSource for PiCam3Src {
     }
 }
 
-impl Drop for PiCam3Src {
-    fn drop(&mut self) {
-        let _ = self.child.kill();
-        let _ = self.child.wait();
-    }
-}
-
 fn read_exact(r: &mut impl Read, buf: &mut [u8]) -> io::Result<()> {
     let mut pos = 0;
     while pos < buf.len() {
@@ -173,7 +153,7 @@ fn read_exact(r: &mut impl Read, buf: &mut [u8]) -> io::Result<()> {
                 return Err(io::Error::new(
                     io::ErrorKind::UnexpectedEof,
                     "EOF mid-frame",
-                ))
+                ));
             }
             Ok(n) => pos += n,
             Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,

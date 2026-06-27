@@ -1,11 +1,11 @@
 use crate::{Error, Frame, FrameSource, Result, ffprobe};
+use duct::ReaderHandle;
 use image::RgbaImage;
 use std::io::Read;
-use std::process::{Child, Command, Stdio};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub struct FileSrc {
-    child: Child,
+    reader: ReaderHandle,
     width: u32,
     height: u32,
     fps: f64,
@@ -19,15 +19,12 @@ impl FileSrc {
         let info = ffprobe::probe(path)?;
         let frame_bytes = (info.width * info.height * 4) as usize;
 
-        let child = Command::new("ffmpeg")
-            .args(["-i", path, "-f", "rawvideo", "-pix_fmt", "rgba", "pipe:1"])
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
+        let reader = duct::cmd!("ffmpeg", "-loglevel", "error", "-i", path, "-f", "rawvideo", "-pix_fmt", "rgba", "pipe:1")
+            .reader()
             .map_err(|e| Error::Process(format!("failed to spawn ffmpeg: {e}")))?;
 
         Ok(Self {
-            child,
+            reader,
             width: info.width,
             height: info.height,
             fps: info.fps,
@@ -47,13 +44,7 @@ impl FileSrc {
 
 impl FrameSource for FileSrc {
     fn next_frame(&mut self) -> Result<Option<Frame>> {
-        let stdout = self
-            .child
-            .stdout
-            .as_mut()
-            .ok_or_else(|| Error::Process("no stdout pipe".into()))?;
-
-        let n = read_exact_or_eof(stdout, &mut self.buf).map_err(Error::Io)?;
+        let n = read_exact_or_eof(&mut self.reader, &mut self.buf).map_err(Error::Io)?;
         if n == 0 {
             return Ok(None); // clean EOF
         }
@@ -78,13 +69,6 @@ impl FrameSource for FileSrc {
     }
     fn is_live(&self) -> bool {
         false
-    }
-}
-
-impl Drop for FileSrc {
-    fn drop(&mut self) {
-        let _ = self.child.kill();
-        let _ = self.child.wait();
     }
 }
 

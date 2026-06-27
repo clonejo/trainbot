@@ -1,7 +1,6 @@
 use crate::{Error, Result};
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
-use std::process::Command;
 use std::time::SystemTime;
 
 #[derive(Debug, Deserialize)]
@@ -31,25 +30,10 @@ pub struct VideoInfo {
 }
 
 pub fn probe(path: &str) -> Result<VideoInfo> {
-    let out = Command::new("ffprobe")
-        .args([
-            "-v",
-            "quiet",
-            "-print_format",
-            "json",
-            "-show_streams",
-            path,
-        ])
-        .output()
+    let out = duct::cmd!("ffprobe", "-v", "quiet", "-print_format", "json", "-show_streams", path)
+        .stdout_capture()
+        .run()
         .map_err(|e| Error::Probe(format!("failed to run ffprobe: {e}")))?;
-
-    if !out.status.success() {
-        return Err(Error::Probe(format!(
-            "ffprobe exited {}: {}",
-            out.status,
-            String::from_utf8_lossy(&out.stderr)
-        )));
-    }
 
     let parsed: ProbeOutput = serde_json::from_slice(&out.stdout)
         .map_err(|e| Error::Probe(format!("bad ffprobe JSON: {e}")))?;
