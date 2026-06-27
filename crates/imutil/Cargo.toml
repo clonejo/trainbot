@@ -1,0 +1,11 @@
+[package]
+name = "imutil"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+image = { workspace = true, features = ["jpeg", "png", "gif"] }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }

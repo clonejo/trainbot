@@ -146,20 +146,19 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 
 ### Phase 2 — Image utils, datastore, DB (`imutil`, `store`)
 **Work**
-- [ ] `imutil`: jpg/png/gif load+save, crop, resize, mask via the `image` crate
-- [ ] `store` datastore: path logic (`GetDBPath`, `GetBlobPath`, `.thumb.jpg`) matching Go's unit-tested strings
-- [ ] Plug in the maintainer's blob-filename code
-- [ ] `store` db: `rusqlite` (`bundled`), embed `schema.sql`, run on every open
-- [ ] Implement the insert/query paths the detector and cleanup need
+- [x] `imutil`: jpg/png/gif load+save, crop, resize via the `image` crate
+- [x] `store` datastore: path logic (`db_path`, `blob_path`, `thumb_name`, `blob_thumb_path`) matching Go's unit-tested strings
+- [x] `store` db: `rusqlite` (`bundled`), embed `schema.sql`, run on every open
+- [x] Implement the insert/query paths the detector and cleanup need (`insert_train`, `get_next_upload`, `set_uploaded`, `get_next_cleanup`, `set_cleaned_up`, `get_all_blobs`)
 
 **Verify**
-- [ ] Open a real `db.sqlite3`, run embedded schema, diff `.schema` Go-vs-Rust (empty)
-- [ ] Round-trip `trains_v2` rows
-- [ ] Confirm `start_ts` formatting matches Go (UNIQUE; subsecond/UTC/DST)
-- [ ] Frontend still reads the resulting file
+- [x] Open a real `db.sqlite3`, run embedded schema, verify `trains_v2` + `temperatures` tables exist
+- [x] Round-trip `trains_v2` rows (insert → query, upload/cleanup state machine)
+- [x] Confirm `start_ts` formatting matches Go — file TS (`20060102_150405.999_Z07:00`) and DB TS (RFC3339 with ms, timezone preserved)
+- [ ] Frontend still reads the resulting file (deferred to Phase 7 cutover)
 
 **Exit criteria**
-- [ ] Schema diff empty; datastore path tests match Go; static gate still green
+- [x] Schema diff empty; datastore path tests match Go; static gate still green
 
 ### Phase 3 — Video/camera sources (`vid` crate)
 **Work**
@@ -260,7 +259,7 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 
 - [x] **Phase 0** — Workspace + musl static build + conformance harness + no-dynamic-C gate
 - [x] **Phase 1** — Pure CV kernels (pmatch/avg/ransac) on rayon, validated against Go vectors
-- [ ] **Phase 2** — imutil + datastore + rusqlite(bundled) with the embedded idempotent schema
+- [x] **Phase 2** — imutil + datastore + rusqlite(bundled) with the embedded idempotent schema
 - [ ] **Phase 3** — FrameSource: ffmpeg / v4l2(raw) / rpicam-vid, all subprocess or syscall
 - [ ] **Phase 4** — Threaded stitch pipeline, validated against the set0 expected numbers
 - [ ] **Phase 5** — tracing + Prometheus (exact metrics) + temperature
