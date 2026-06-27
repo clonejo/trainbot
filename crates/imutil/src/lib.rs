@@ -61,6 +61,7 @@ mod tests {
     use camino::Utf8PathBuf;
     use image::DynamicImage;
 
+    // LCG (Knuth MMIX constants), no rand dep needed
     fn rand_rgba(seed: u64, w: u32, h: u32) -> DynamicImage {
         let mut pix = vec![0u8; (w * h * 4) as usize];
         let mut s = seed;
