@@ -15,12 +15,8 @@ impl DataStore {
         }
     }
 
-    pub fn data_path(&self, rel: impl AsRef<Utf8Path>) -> Utf8PathBuf {
-        self.data_dir.join(rel)
-    }
-
     pub fn db_path(&self) -> Utf8PathBuf {
-        self.data_path(DB_FILE)
+        self.data_dir.join(DB_FILE)
     }
 
     pub fn blob_path(&self, name: impl AsRef<Utf8Path>) -> Utf8PathBuf {
