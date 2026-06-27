@@ -114,30 +114,49 @@ mod tests {
         )
     }
 
-    #[test]
-    fn file_src_day_frame_count() {
-        if std::process::Command::new("ffprobe")
+    fn ffprobe_available() -> bool {
+        std::process::Command::new("ffprobe")
             .arg("-version")
             .output()
-            .is_err()
-        {
-            eprintln!("skip: ffprobe not found");
-            return;
-        }
-        let path = set0_path("day.mp4");
-        let mut src = FileSrc::open(&path).expect("open day.mp4");
-        let w = src.width();
-        let h = src.height();
-        assert!(w > 0 && h > 0, "dimensions must be non-zero");
+            .is_ok()
+    }
 
-        let mut count = 0u32;
+    fn count_frames(name: &str) -> u32 {
+        let path = set0_path(name);
+        let mut src = FileSrc::open(&path).unwrap_or_else(|e| panic!("open {name}: {e}"));
+        assert!(src.width() > 0 && src.height() > 0);
+        let mut n = 0u32;
         while src.next_frame().unwrap().is_some() {
-            count += 1;
+            n += 1;
         }
-        // Go reference: day → 86 frames; allow ±1 for rounding at EOF boundary
-        assert!(
-            (85..=87).contains(&count),
-            "expected ~86 frames, got {count}"
-        );
+        n
+    }
+
+    #[test]
+    fn file_src_day_frame_count() {
+        if !ffprobe_available() { eprintln!("skip: ffprobe not found"); return; }
+        let n = count_frames("day.mp4");
+        assert!((85..=87).contains(&n), "expected ~86 frames, got {n}");
+    }
+
+    #[test]
+    fn file_src_night_frame_count() {
+        if !ffprobe_available() { eprintln!("skip: ffprobe not found"); return; }
+        let n = count_frames("night.mp4");
+        assert!((82..=84).contains(&n), "expected ~83 frames, got {n}");
+    }
+
+    #[test]
+    fn file_src_rain_frame_count() {
+        if !ffprobe_available() { eprintln!("skip: ffprobe not found"); return; }
+        let n = count_frames("rain.mp4");
+        assert!((81..=83).contains(&n), "expected ~82 frames, got {n}");
+    }
+
+    #[test]
+    fn file_src_snow_frame_count() {
+        if !ffprobe_available() { eprintln!("skip: ffprobe not found"); return; }
+        let n = count_frames("snow.mp4");
+        assert!((55..=57).contains(&n), "expected ~56 frames, got {n}");
     }
 }

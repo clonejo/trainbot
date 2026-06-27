@@ -97,7 +97,7 @@ impl<R: Read> JpegScanner<R> {
             if marker_type == EOI {
                 break;
             }
-            if marker_type >= RST0 && marker_type <= RST7 {
+            if (RST0..=RST7).contains(&marker_type) {
                 return Err(Error::Format("RST marker at invalid position".into()));
             }
 

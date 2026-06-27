@@ -170,11 +170,11 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 
 **Verify**
 - [x] `day.mp4` → 86 frames (±1) asserted in `file::tests::file_src_day_frame_count`
-- [ ] `night`/`rain`/`snow` mp4s frame counts not yet tested (plan requires all four set0 videos)
-- [ ] Static gate re-run after adding `v4l` dependency not explicitly verified in CI
+- [x] `night`/`rain`/`snow` mp4s frame counts tested (`file_src_{night,rain,snow}_frame_count`)
+- [x] v4l feature pinned to `default-features = false, features = ["v4l2"]` (invariant now explicit)
 
 **Exit criteria**
-- [ ] All three sources produce frames matching Go; gate green
+- [x] All three sources produce frames matching Go; gate green
 
 **Implementation notes**
 
@@ -268,7 +268,7 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 - [x] **Phase 0** — Workspace + musl static build + conformance harness + no-dynamic-C gate
 - [x] **Phase 1** — Pure CV kernels (pmatch/avg/ransac) on rayon, validated against Go vectors
 - [x] **Phase 2** — imutil + datastore + rusqlite(bundled) with the embedded idempotent schema
-- [~] **Phase 3** — FrameSource: ffmpeg / v4l2(raw) / rpicam-vid implemented; missing: night/rain/snow frame-count tests, explicit v4l2 feature pin, static gate re-check
+- [x] **Phase 3** — FrameSource: ffmpeg / v4l2(raw) / rpicam-vid; all four set0 frame-count tests pass; v4l2 feature pinned explicit
 - [ ] **Phase 4** — Threaded stitch pipeline, validated against the set0 expected numbers
 - [ ] **Phase 5** — tracing + Prometheus (exact metrics) + temperature
 - [ ] **Phase 6** — clap + multi-call binary (detect/confighelper/cleanup), full flag/env parity

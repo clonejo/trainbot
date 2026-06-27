@@ -11,7 +11,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-v4l = { version = "0.14", default-features = true }
+v4l = { version = "0.14", default-features = false, features = ["v4l2"] }
 
 [dev-dependencies]
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }

@@ -1,12 +1,15 @@
 //! USB camera frame source via Video4Linux 2 (raw ioctls only; no libv4l linkage).
 
-use crate::{Error, FourCC, Frame, FrameSource, Result, convert};
+use std::{
+    sync::mpsc::{self, Receiver, SyncSender},
+    thread,
+    time::SystemTime,
+};
+
 use image::RgbaImage;
-use std::sync::mpsc::{self, Receiver, SyncSender};
-use std::thread;
-use std::time::SystemTime;
-use v4l::io::traits::CaptureStream;
-use v4l::video::Capture;
+use v4l::{io::traits::CaptureStream, video::Capture};
+
+use crate::{convert, Error, FourCC, Frame, FrameSource, Result};
 
 const SKIP_INITIAL_FRAMES: usize = 5;
 const STREAM_BUFFERS: u32 = 4;
@@ -65,19 +68,18 @@ impl CamSrc {
     }
 }
 
-fn capture_thread(
-    dev: v4l::Device,
-    cfg: CamConfig,
-    tx: SyncSender<Result<RgbaImage>>,
-) {
-    let mut stream =
-        match v4l::io::mmap::Stream::with_buffers(&dev, v4l::buffer::Type::VideoCapture, STREAM_BUFFERS) {
-            Ok(s) => s,
-            Err(e) => {
-                let _ = tx.send(Err(Error::Io(e)));
-                return;
-            }
-        };
+fn capture_thread(dev: v4l::Device, cfg: CamConfig, tx: SyncSender<Result<RgbaImage>>) {
+    let mut stream = match v4l::io::mmap::Stream::with_buffers(
+        &dev,
+        v4l::buffer::Type::VideoCapture,
+        STREAM_BUFFERS,
+    ) {
+        Ok(s) => s,
+        Err(e) => {
+            let _ = tx.send(Err(Error::Io(e)));
+            return;
+        }
+    };
 
     // Discard initial frames (some cameras return garbage frames at startup)
     for _ in 0..SKIP_INITIAL_FRAMES {
@@ -107,7 +109,9 @@ fn capture_thread(
             }
             FourCC::YUYV => convert::yuyv_to_rgba(buf, cfg.width, cfg.height),
             other => {
-                let _ = tx.send(Err(Error::Format(format!("unsupported camera format {other}"))));
+                let _ = tx.send(Err(Error::Format(format!(
+                    "unsupported camera format {other}"
+                ))));
                 return;
             }
         };
@@ -120,7 +124,10 @@ fn capture_thread(
 
 impl FrameSource for CamSrc {
     fn next_frame(&mut self) -> Result<Option<Frame>> {
-        let image = self.rx.recv().map_err(|_| Error::Process("camera thread exited".into()))??;
+        let image = self
+            .rx
+            .recv()
+            .map_err(|_| Error::Process("camera thread exited".into()))??;
         Ok(Some(Frame {
             image,
             ts: SystemTime::now(),
@@ -147,7 +154,7 @@ pub fn detect_cams() -> Result<Vec<CamConfig>> {
         .filter(|p| {
             p.file_name()
                 .and_then(|n| n.to_str())
-                .map_or(false, |n| n.starts_with("video"))
+                .is_some_and(|n| n.starts_with("video"))
         })
         .collect();
     entries.sort();
