@@ -6,6 +6,7 @@ members = [
     "crates/imutil",
     "crates/store",
     "crates/vid",
+    "crates/core",
     "bin/trainbot",
     "tests/conformance",
 ]

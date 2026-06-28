@@ -55,7 +55,14 @@ impl FrameSource for FileSrc {
             )));
         }
 
-        let ts = self.start_time + Duration::from_secs_f64(self.frame_count as f64 / self.fps);
+        // Replicate Go's timestamp arithmetic exactly:
+        //   ts = startTS + time.Second * time.Duration(count) / time.Duration(fps)
+        // `time.Duration` is int64 nanoseconds, so `time.Duration(fps)` truncates
+        // the float fps to an integer (e.g. 29.833... → 29).  Using float division
+        // instead would make per-frame timestamps ~1 ms shorter, shifting fitted
+        // speeds ~2–3% high for videos with fractional fps (e.g. 179/6 ≈ 29.83).
+        let ts = self.start_time
+            + Duration::from_nanos(self.frame_count * 1_000_000_000 / self.fps as u64);
         self.frame_count += 1;
 
         let img = RgbaImage::from_raw(self.width, self.height, self.buf.clone())
@@ -120,27 +127,27 @@ mod tests {
     fn file_src_day_frame_count() {
         if !ffprobe_available() { eprintln!("skip: ffprobe not found"); return; }
         let n = count_frames("day.mp4");
-        assert!((85..=87).contains(&n), "expected ~86 frames, got {n}");
+        assert!((182..=184).contains(&n), "expected 183 frames, got {n}");
     }
 
     #[test]
     fn file_src_night_frame_count() {
         if !ffprobe_available() { eprintln!("skip: ffprobe not found"); return; }
         let n = count_frames("night.mp4");
-        assert!((82..=84).contains(&n), "expected ~83 frames, got {n}");
+        assert!((206..=208).contains(&n), "expected 207 frames, got {n}");
     }
 
     #[test]
     fn file_src_rain_frame_count() {
         if !ffprobe_available() { eprintln!("skip: ffprobe not found"); return; }
         let n = count_frames("rain.mp4");
-        assert!((81..=83).contains(&n), "expected ~82 frames, got {n}");
+        assert!((196..=198).contains(&n), "expected 197 frames, got {n}");
     }
 
     #[test]
     fn file_src_snow_frame_count() {
         if !ffprobe_available() { eprintln!("skip: ffprobe not found"); return; }
         let n = count_frames("snow.mp4");
-        assert!((55..=57).contains(&n), "expected ~56 frames, got {n}");
+        assert!((88..=90).contains(&n), "expected 89 frames, got {n}");
     }
 }

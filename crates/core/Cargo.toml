@@ -1,0 +1,19 @@
+[package]
+name = "trainbot-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pmatch = { path = "../cv/pmatch" }
+avg    = { path = "../cv/avg" }
+ransac = { path = "../cv/ransac" }
+vid    = { path = "../vid" }
+image  = { workspace = true, features = ["jpeg", "png"] }
+thiserror = { workspace = true }
+tracing = "0.1"
+gif = "0.13"
+color_quant = "1.1"
+crossbeam-channel = "0.5"
+
+[dev-dependencies]
+image = { workspace = true, features = ["jpeg", "png"] }
