@@ -1,11 +1,11 @@
 # Rust port
 
+The Rust codebase has been ported by LLM from [jo-m](https://jo-m.ch/)'s Go implementation. jo-m has since retired his project. While Go is not a bad fit for Onlytrains, personally i feel much more at home in Rust and i wish to improve upon it further.
+
 ## Installation
 
 Using Nix: `nix develop` provides everything including the cross toolchains.
 Using Docker: `make docker_build` (Go) or `cargo build` inside the Docker image built from this repo's `Dockerfile`.
-
-
 
 ### Native build requirements (Rust)
 
@@ -32,4 +32,3 @@ For `aarch64-unknown-linux-musl` static builds, install [`cross`](https://github
 ```bash
 cross build --release --target aarch64-unknown-linux-musl -p trainbot
 ```
-
