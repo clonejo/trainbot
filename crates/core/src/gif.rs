@@ -7,6 +7,7 @@ use crate::sequence::Sequence;
 /// Mirrors Go's `createGIF` except for the palette algorithm:
 /// - **Go** uses `github.com/mccutchen/palettor` — k-means clustering, 100 iterations.
 /// - **Rust** uses `color_quant::NeuQuant` — neural quantization, sample_factor=10.
+///
 /// Both extract 20 colors from a ≤300×300 thumbnail of the stitched image.
 /// The resulting palettes differ, so GIF pixel data is not byte-identical to Go's,
 /// but perceptual quality is equivalent.
@@ -32,8 +33,8 @@ pub(crate) fn create_gif(seq: &Sequence, stitched: &RgbaImage) -> Vec<u8> {
 
     let mut output = Vec::new();
     {
-        let mut encoder = gif::Encoder::new(&mut output, fw, fh, &palette_rgb)
-            .expect("gif encoder init");
+        let mut encoder =
+            gif::Encoder::new(&mut output, fw, fh, &palette_rgb).expect("gif encoder init");
         encoder
             .set_repeat(gif::Repeat::Infinite)
             .expect("gif set repeat");

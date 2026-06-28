@@ -1,9 +1,9 @@
 use image::RgbaImage;
 
-use crate::{Config, Sequence, Train};
-use crate::fit::{FitMethod, fit_dx};
+use crate::fit::{fit_dx, FitMethod};
 use crate::gif::create_gif;
 use crate::metrics::{record_fit_and_stitch_result, record_sequence_length};
+use crate::{Config, Sequence, Train};
 
 /// Composite `frames` into a panoramic RGBA image using the integer offsets `dx`.
 ///
@@ -37,9 +37,7 @@ pub(crate) fn stitch(frames: &[RgbaImage], dx: &[i32]) -> Result<RgbaImage, Stri
 
     const MAX_MEMORY_BYTES: usize = 1024 * 1024 * 50;
     if (img_w as usize) * (img_h as usize) * 4 > MAX_MEMORY_BYTES {
-        return Err(format!(
-            "would allocate too much memory: {img_w}x{img_h}"
-        ));
+        return Err(format!("would allocate too much memory: {img_w}x{img_h}"));
     }
 
     let mut img = RgbaImage::new(img_w, img_h);
@@ -67,7 +65,11 @@ pub(crate) fn stitch(frames: &[RgbaImage], dx: &[i32]) -> Result<RgbaImage, Stri
 ///
 /// Modifies `seq` in-place (strips trailing zero-dx entries).
 /// Returns `Err` with a descriptive message if the sequence is rejected.
-pub(crate) fn fit_and_stitch(mut seq: Sequence, config: &Config, method: FitMethod) -> Result<Train, String> {
+pub(crate) fn fit_and_stitch(
+    mut seq: Sequence,
+    config: &Config,
+    method: FitMethod,
+) -> Result<Train, String> {
     // Strip trailing zero-dx frames (mirrors Go's `fitAndStitch`).
     while !seq.dx.is_empty() && *seq.dx.last().unwrap() == 0 {
         seq.dx.pop();
@@ -78,9 +80,8 @@ pub(crate) fn fit_and_stitch(mut seq: Sequence, config: &Config, method: FitMeth
 
     // max_px_per_frame(1) = max pixels/frame at 1 fps = max speed in px/s.
     let max_speed_px_s = config.max_px_per_frame(1.0) as f64;
-    let (dx_fit, ds, v0, a) = fit_dx(&seq, max_speed_px_s, method).map_err(|e| {
+    let (dx_fit, ds, v0, a) = fit_dx(&seq, max_speed_px_s, method).inspect_err(|_| {
         record_fit_and_stitch_result("unable_to_fit");
-        e
     })?;
 
     if ds < config.min_length_px() {
@@ -110,9 +111,8 @@ pub(crate) fn fit_and_stitch(mut seq: Sequence, config: &Config, method: FitMeth
         ));
     }
 
-    let img = stitch(&seq.frames, &dx_fit).map_err(|e| {
+    let img = stitch(&seq.frames, &dx_fit).inspect_err(|_| {
         record_fit_and_stitch_result("unable_to_assemble_image");
-        e
     })?;
     let gif_data = create_gif(&seq, &img);
     record_fit_and_stitch_result("success");
