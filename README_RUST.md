@@ -27,8 +27,10 @@ cargo build                                          # native debug
 cargo build --target x86_64-unknown-linux-musl       # static x86_64
 ```
 
-For `aarch64-unknown-linux-musl` static builds, install [`cross`](https://github.com/cross-rs/cross) and run:
+For `aarch64-unknown-linux-musl` static builds:
 
 ```bash
-cross build --release --target aarch64-unknown-linux-musl -p trainbot
+rustup target add aarch64-unknown-linux-musl
+paru -S aarch64-linux-musl-cross # (AUR)
+cargo build --release --target aarch64-unknown-linux-musl -p trainbot
 ```
