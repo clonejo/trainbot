@@ -1,4 +1,4 @@
-use tracing_subscriber::{EnvFilter, fmt};
+use tracing_subscriber::{fmt, EnvFilter};
 
 #[derive(Clone, Debug)]
 pub struct LogConfig {

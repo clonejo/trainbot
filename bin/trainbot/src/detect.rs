@@ -51,11 +51,10 @@ pub fn run(argv: Vec<String>) {
             .into_rgba8()
     });
 
-    let fourcc = FourCC::parse(&args.camera_format_fourcc)
-        .unwrap_or_else(|| {
-            eprintln!("error: invalid FourCC {:?}", args.camera_format_fourcc);
-            std::process::exit(2);
-        });
+    let fourcc = FourCC::parse(&args.camera_format_fourcc).unwrap_or_else(|| {
+        eprintln!("error: invalid FourCC {:?}", args.camera_format_fourcc);
+        std::process::exit(2);
+    });
 
     let mut src = open_source(&args, fourcc).unwrap_or_else(|e| {
         eprintln!("error: failed to open video source: {e:#}");
@@ -97,11 +96,10 @@ pub fn run(argv: Vec<String>) {
                 } else {
                     frame.image
                 };
-                if let Some(train) = stitcher.frame(img, frame.ts) {
-                    if let Err(e) = save_train(&train, &ds, &conn) {
+                if let Some(train) = stitcher.frame(img, frame.ts)
+                    && let Err(e) = save_train(&train, &ds, &conn) {
                         tracing::error!(err = %e, "failed to save train");
                     }
-                }
             }
             Ok(None) => break,
             Err(e) => {
@@ -114,11 +112,10 @@ pub fn run(argv: Vec<String>) {
         }
     }
 
-    if let Some(train) = stitcher.try_stitch_and_reset() {
-        if let Err(e) = save_train(&train, &ds, &conn) {
+    if let Some(train) = stitcher.try_stitch_and_reset()
+        && let Err(e) = save_train(&train, &ds, &conn) {
             tracing::error!(err = %e, "failed to save final train");
         }
-    }
 }
 
 fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn FrameSource>> {
@@ -141,8 +138,8 @@ fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn Fram
     #[cfg(target_os = "linux")]
     {
         use std::os::unix::fs::FileTypeExt;
-        if let Ok(meta) = std::fs::metadata(&args.input) {
-            if meta.file_type().is_char_device() {
+        if let Ok(meta) = std::fs::metadata(&args.input)
+            && meta.file_type().is_char_device() {
                 return Ok(Box::new(
                     vid::CamSrc::open(vid::CamConfig {
                         device: args.input.clone(),
@@ -153,7 +150,6 @@ fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn Fram
                     .context("open CamSrc")?,
                 ));
             }
-        }
     }
 
     Ok(Box::new(
@@ -185,15 +181,12 @@ fn save_train(train: &Train, ds: &DataStore, conn: &Connection) -> anyhow::Resul
         dyn_img
     };
 
-    imutil::save_jpeg(&img_path, &dyn_img, 85)
-        .with_context(|| format!("save jpeg {img_name}"))?;
+    imutil::save_jpeg(&img_path, &dyn_img, 85).with_context(|| format!("save jpeg {img_name}"))?;
 
     let thumb = dyn_img.thumbnail(MAX_JPEG_DIM, 64);
-    imutil::save_jpeg(&thumb_path, &thumb, 75)
-        .with_context(|| format!("save thumb {img_name}"))?;
+    imutil::save_jpeg(&thumb_path, &thumb, 75).with_context(|| format!("save thumb {img_name}"))?;
 
-    std::fs::write(&gif_path, &train.gif_data)
-        .with_context(|| format!("save gif {gif_name}"))?;
+    std::fs::write(&gif_path, &train.gif_data).with_context(|| format!("save gif {gif_name}"))?;
 
     let id = queries::insert_train(
         conn,

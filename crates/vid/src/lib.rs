@@ -1,9 +1,9 @@
+mod convert;
 mod fcc;
 mod ffprobe;
 mod file;
 mod jpeg_scan;
 mod picam3;
-mod convert;
 
 #[cfg(target_os = "linux")]
 mod cam;

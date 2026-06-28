@@ -9,7 +9,7 @@ use std::{
 use image::RgbaImage;
 use v4l::{io::traits::CaptureStream, video::Capture};
 
-use crate::{convert, Error, FourCC, Frame, FrameSource, Result};
+use crate::{Error, FourCC, Frame, FrameSource, Result, convert};
 
 const SKIP_INITIAL_FRAMES: usize = 5;
 const STREAM_BUFFERS: u32 = 4;

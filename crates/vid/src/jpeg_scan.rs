@@ -59,7 +59,9 @@ pub struct JpegScanner<R: Read> {
 
 impl<R: Read> JpegScanner<R> {
     pub fn new(r: R) -> Self {
-        Self { inner: Inner::new(r) }
+        Self {
+            inner: Inner::new(r),
+        }
     }
 
     /// Read the next JPEG image from the stream.
@@ -134,9 +136,7 @@ impl<R: Read> JpegScanner<R> {
                     return Ok(0); // clean EOF before anything was read
                 }
                 None => {
-                    return Err(Error::Format(format!(
-                        "EOF after {i} of {n} bytes"
-                    )));
+                    return Err(Error::Format(format!("EOF after {i} of {n} bytes")));
                 }
                 Some(b) => buf.push(b),
             }
@@ -215,7 +215,12 @@ mod tests {
     #[test]
     fn scan_multiple_jpegs() {
         let frame = load_frame_jpg();
-        let stream: Vec<u8> = frame.iter().cloned().cycle().take(frame.len() * 5).collect();
+        let stream: Vec<u8> = frame
+            .iter()
+            .cloned()
+            .cycle()
+            .take(frame.len() * 5)
+            .collect();
         let mut scanner = JpegScanner::new(Cursor::new(stream));
         for _ in 0..5 {
             let out = scanner.scan().unwrap().expect("expected a frame");

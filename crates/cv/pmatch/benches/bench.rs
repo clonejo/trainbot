@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use pmatch::{score_rgba_cos, search_rgba};
 
 const X0: u32 = 65;

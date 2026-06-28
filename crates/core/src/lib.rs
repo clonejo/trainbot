@@ -11,7 +11,7 @@ mod train;
 pub use auto::AutoStitcher;
 pub use config::Config;
 pub use fit::FitMethod;
-pub use log::{LogConfig, init_logging};
+pub use log::{init_logging, LogConfig};
 pub use metrics::init_metrics;
 pub use train::Train;
 

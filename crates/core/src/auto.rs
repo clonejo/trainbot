@@ -2,12 +2,10 @@ use image::RgbaImage;
 use std::time::SystemTime;
 use tracing::trace;
 
-use crate::{Config, Sequence, Train};
 use crate::fit::FitMethod;
-use crate::metrics::{
-    record_brightness, record_frame_disposition, record_sequence_length,
-};
+use crate::metrics::{record_brightness, record_frame_disposition, record_sequence_length};
 use crate::stitch::fit_and_stitch;
+use crate::{Config, Sequence, Train};
 
 const GOOD_COS_SCORE_NO_MOVE: f64 = 0.99;
 const GOOD_COS_SCORE_MOVE: f64 = 0.925;
@@ -99,10 +97,7 @@ impl AutoStitcher {
     fn process_frame(&mut self, frame: &RgbaImage, ts: SystemTime) -> Option<Train> {
         let prev_ts = self.prev_ts?;
 
-        let frame_period_s = ts
-            .duration_since(prev_ts)
-            .unwrap_or_default()
-            .as_secs_f64();
+        let frame_period_s = ts.duration_since(prev_ts).unwrap_or_default().as_secs_f64();
         if frame_period_s < MIN_FRAME_PERIOD_S {
             return None;
         }
@@ -131,10 +126,7 @@ impl AutoStitcher {
             record_frame_disposition("low_contrast");
             if is_active {
                 let last_ts = *self.seq.ts.last().unwrap();
-                let elapsed = ts
-                    .duration_since(last_ts)
-                    .unwrap_or_default()
-                    .as_secs_f64();
+                let elapsed = ts.duration_since(last_ts).unwrap_or_default().as_secs_f64();
                 if elapsed > MAX_FRAME_PERIOD_S {
                     return self.try_stitch_and_reset();
                 }

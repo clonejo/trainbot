@@ -79,12 +79,9 @@ fn fit_linear_robust(
         }
 
         let (it, iv): (Vec<f64>, Vec<f64>) = inliers.into_iter().unzip();
-        let new_params =
-            ols_linear(&it, &iv).ok_or_else(|| "OLS on inliers failed".to_string())?;
+        let new_params = ols_linear(&it, &iv).ok_or_else(|| "OLS on inliers failed".to_string())?;
 
-        if (new_params[0] - params[0]).abs() < 1e-10
-            && (new_params[1] - params[1]).abs() < 1e-10
-        {
+        if (new_params[0] - params[0]).abs() < 1e-10 && (new_params[1] - params[1]).abs() < 1e-10 {
             return Ok(new_params);
         }
         params = new_params;
@@ -156,22 +153,20 @@ pub(crate) fn fit_dx(
 
     let fit: Vec<f64> = match method {
         FitMethod::Ols => fit_linear_robust(&t_fit, &v_fit, threshold, min_inliers)?.to_vec(),
-        FitMethod::Ransac => {
-            ransac::ransac(
-                &t_fit,
-                &v_fit,
-                |t, p| p[0] + p[1] * t,
-                2,
-                ransac::MetaParams {
-                    min_model_points: 3,
-                    max_iter: 25,
-                    min_inliers,
-                    inlier_threshold: threshold,
-                    seed: 0,
-                },
-            )
-            .map_err(|e| e.to_string())?
-        }
+        FitMethod::Ransac => ransac::ransac(
+            &t_fit,
+            &v_fit,
+            |t, p| p[0] + p[1] * t,
+            2,
+            ransac::MetaParams {
+                min_model_points: 3,
+                max_iter: 25,
+                min_inliers,
+                inlier_threshold: threshold,
+                seed: 0,
+            },
+        )
+        .map_err(|e| e.to_string())?,
     };
 
     // Regenerate integer dx from the fitted model, accumulating and

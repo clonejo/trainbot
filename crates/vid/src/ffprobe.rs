@@ -30,10 +30,18 @@ pub struct VideoInfo {
 }
 
 pub fn probe(path: &str) -> Result<VideoInfo> {
-    let out = duct::cmd!("ffprobe", "-v", "quiet", "-print_format", "json", "-show_streams", path)
-        .stdout_capture()
-        .run()
-        .map_err(|e| Error::Probe(format!("failed to run ffprobe: {e}")))?;
+    let out = duct::cmd!(
+        "ffprobe",
+        "-v",
+        "quiet",
+        "-print_format",
+        "json",
+        "-show_streams",
+        path
+    )
+    .stdout_capture()
+    .run()
+    .map_err(|e| Error::Probe(format!("failed to run ffprobe: {e}")))?;
 
     let parsed: ProbeOutput = serde_json::from_slice(&out.stdout)
         .map_err(|e| Error::Probe(format!("bad ffprobe JSON: {e}")))?;
@@ -50,7 +58,9 @@ pub fn probe(path: &str) -> Result<VideoInfo> {
         _ => return Err(Error::MultipleVideoStreams),
     };
 
-    let width = stream.width.ok_or_else(|| Error::Probe("missing width".into()))?;
+    let width = stream
+        .width
+        .ok_or_else(|| Error::Probe("missing width".into()))?;
     let height = stream
         .height
         .ok_or_else(|| Error::Probe("missing height".into()))?;

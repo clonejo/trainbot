@@ -58,11 +58,9 @@ pub fn run(argv: Vec<String>) {
             let listener = TcpListener::bind(&listen_addr)
                 .unwrap_or_else(|e| panic!("cannot bind {listen_addr}: {e}"));
             tracing::info!(url = %format!("http://{listen_addr}"), "confighelper listening");
-            for stream in listener.incoming() {
-                if let Ok(stream) = stream {
-                    let shared = Arc::clone(&shared);
-                    thread::spawn(move || handle_connection(stream, shared));
-                }
+            for stream in listener.incoming().flatten() {
+                let shared = Arc::clone(&shared);
+                thread::spawn(move || handle_connection(stream, shared));
             }
         });
     }
@@ -73,15 +71,14 @@ pub fn run(argv: Vec<String>) {
     loop {
         match src.next_frame() {
             Ok(Some(frame)) => {
-                if frame_idx % every_nth == 0 {
-                    if let Ok(jpeg) = encode_jpeg(&frame.image) {
+                if frame_idx.is_multiple_of(every_nth)
+                    && let Ok(jpeg) = encode_jpeg(&frame.image) {
                         let (lock, cvar) = &*shared;
                         let mut state = lock.lock().unwrap();
                         state.jpeg = Some(jpeg);
                         state.seq += 1;
                         cvar.notify_all();
                     }
-                }
                 frame_idx += 1;
             }
             Ok(None) => {
@@ -116,8 +113,8 @@ fn open_source(args: &ConfighelperArgs) -> anyhow::Result<Box<dyn FrameSource>> 
     #[cfg(target_os = "linux")]
     {
         use std::os::unix::fs::FileTypeExt;
-        if let Ok(meta) = std::fs::metadata(&args.input) {
-            if meta.file_type().is_char_device() {
+        if let Ok(meta) = std::fs::metadata(&args.input)
+            && meta.file_type().is_char_device() {
                 return Ok(Box::new(
                     vid::CamSrc::open(vid::CamConfig {
                         device: args.input.clone(),
@@ -128,7 +125,6 @@ fn open_source(args: &ConfighelperArgs) -> anyhow::Result<Box<dyn FrameSource>> 
                     .map_err(|e| anyhow::anyhow!("{e}"))?,
                 ));
             }
-        }
     }
 
     Ok(Box::new(
@@ -145,10 +141,7 @@ fn probe_cameras() {
                 for cam in cams {
                     println!(
                         "--input {} --camera-format-fourcc {} --camera-w {} --camera-h {}",
-                        cam.device,
-                        cam.fourcc,
-                        cam.width,
-                        cam.height
+                        cam.device, cam.fourcc, cam.width, cam.height
                     );
                 }
             }
@@ -211,9 +204,7 @@ fn serve_mjpeg(mut stream: TcpStream, shared: Shared) {
         let jpeg = {
             let (lock, cvar) = &*shared;
             let guard = lock.lock().unwrap();
-            let guard = cvar
-                .wait_while(guard, |s| s.seq == last_seq)
-                .unwrap();
+            let guard = cvar.wait_while(guard, |s| s.seq == last_seq).unwrap();
             last_seq = guard.seq;
             guard.jpeg.clone()
         };
