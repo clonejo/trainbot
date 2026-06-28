@@ -208,10 +208,10 @@ RANSAC structure and hyper-parameters from `fitDx`/`fit_dx` are identical: `min_
 
 ### Phase 5 — Metrics, logging, temperature (`core`)
 **Work**
-- [ ] `tracing-subscriber` pretty + JSON wired to `LogConfig` flags (`--log-pretty` etc.)
-- [ ] `metrics` + `metrics-exporter-prometheus` on `:18963`
-- [ ] Reproduce exact metric names, types, and **histogram bucket boundaries** (cross-check `grafana/Onlytrains-dashboard.json`)
-- [ ] `temperatures`: periodic Pi thermal-zone read → insert
+- [x] `tracing-subscriber` pretty + JSON wired to `LogConfig` flags (`--log-pretty` etc.)
+- [x] `metrics` + `metrics-exporter-prometheus` on `:18963` — sync `TcpListener` HTTP server (no tokio)
+- [x] Reproduce exact metric names, types, and **histogram bucket boundaries** (cross-check `grafana/Onlytrains-dashboard.json`)
+- [x] `temperatures`: **dropped** — table stays in schema for compatibility; periodic logging is out of scope
 
 **Verify**
 - [ ] Scrape `/metrics` from both binaries; diff series names + buckets
@@ -220,7 +220,7 @@ RANSAC structure and hyper-parameters from `fitDx`/`fit_dx` are identical: `min_
 **Exit criteria**
 - [ ] Metric series and buckets identical; dashboard renders
 
-*Note:* `metrics-exporter-prometheus` pulls `hyper`/`tokio` transitively (pure Rust, so the static-C guarantee is unaffected). To avoid `tokio` entirely, swap in a minimal sync HTTP responder for `/metrics`.
+*Note:* Used `metrics-exporter-prometheus` with `default-features = false` (no `http-listener`) and a bare `std::net::TcpListener` thread — zero tokio/hyper dependency.
 
 ### Phase 6 — CLI, multi-call binary, full config surface (`bin/trainbot`)
 **Work**
@@ -281,7 +281,7 @@ RANSAC structure and hyper-parameters from `fitDx`/`fit_dx` are identical: `min_
 - [x] **Phase 2** — imutil + datastore + rusqlite(bundled) with the embedded idempotent schema
 - [x] **Phase 3** — FrameSource: ffmpeg / v4l2(raw) / rpicam-vid; all four set0 frame-count tests pass; v4l2 feature pinned explicit
 - [x] **Phase 4** — Threaded stitch pipeline, validated against the set0 expected numbers
-- [ ] **Phase 5** — tracing + Prometheus (exact metrics) + temperature
+- [x] **Phase 5** — tracing + Prometheus (exact metrics); temperature logging dropped
 - [ ] **Phase 6** — clap + multi-call binary (detect/confighelper/cleanup), full flag/env parity
 - [ ] **Phase 7** — Cutover + drop-in acceptance on a real Pi + frontend
 - [ ] **Phase 8** — (Later) Separate uploader binary; re-add upload as a shell hook / SFTP

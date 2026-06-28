@@ -4,6 +4,9 @@ use tracing::trace;
 
 use crate::{Config, Sequence, Train};
 use crate::fit::FitMethod;
+use crate::metrics::{
+    record_brightness, record_frame_disposition, record_sequence_length,
+};
 use crate::stitch::fit_and_stitch;
 
 const GOOD_COS_SCORE_NO_MOVE: f64 = 0.99;
@@ -74,12 +77,14 @@ impl AutoStitcher {
         self.seq.frames.push(frame);
         self.seq.dx.push(dx);
         self.seq.ts.push(ts);
+        record_sequence_length(self.seq.frames.len());
     }
 
     /// Attempt to stitch any buffered sequence and reset state.
     pub fn try_stitch_and_reset(&mut self) -> Option<Train> {
         let seq = std::mem::replace(&mut self.seq, Sequence::new());
         self.dx_abs_low_pass = 0.0;
+        record_sequence_length(0);
 
         if seq.is_empty() {
             return None;
@@ -111,15 +116,19 @@ impl AutoStitcher {
                 frame.width(),
                 max_dx * 3
             );
+            record_frame_disposition("slow_frame");
             return None;
         }
 
         let is_active = !self.seq.is_empty();
 
-        let (_avg, avg_dev) = avg::rgba(frame);
+        let (avg_ch, avg_dev) = avg::rgba(frame);
+        let avg_mean = (avg_ch[0] + avg_ch[1] + avg_ch[2]) / 3.0;
         let avg_dev_mean = (avg_dev[0] + avg_dev[1] + avg_dev[2]) / 3.0;
+        record_brightness(avg_mean, avg_dev_mean);
 
         if avg_dev_mean < MIN_CONTRAST_AVG_DEV {
+            record_frame_disposition("low_contrast");
             if is_active {
                 let last_ts = *self.seq.ts.last().unwrap();
                 let elapsed = ts
@@ -154,12 +163,14 @@ impl AutoStitcher {
             }
 
             self.record(prev_ts, frame.clone(), dx, ts);
+            record_frame_disposition("recorded");
             return None;
         }
 
         // Not yet in a sequence.
         if cos >= GOOD_COS_SCORE_NO_MOVE && dx.unsigned_abs() < min_dx as u32 {
-            return None; // stationary
+            record_frame_disposition("not_moving");
+            return None;
         }
 
         if cos >= GOOD_COS_SCORE_MOVE
@@ -169,10 +180,12 @@ impl AutoStitcher {
             tracing::info!("start of new sequence");
             self.record(prev_ts, frame.clone(), dx, ts);
             self.dx_abs_low_pass = dx.unsigned_abs() as f64;
+            record_frame_disposition("recorded_new_sequence");
             return None;
         }
 
         tracing::debug!(cos, dx, min_dx, max_dx, "inconclusive frame");
+        record_frame_disposition("inconclusive");
         None
     }
 

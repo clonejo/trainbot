@@ -11,6 +11,9 @@ vid    = { path = "../vid" }
 image  = { workspace = true, features = ["jpeg", "png"] }
 thiserror = { workspace = true }
 tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+metrics = "0.24"
+metrics-exporter-prometheus = { version = "0.16", default-features = false }
 gif = "0.13"
 color_quant = "1.1"
 crossbeam-channel = "0.5"

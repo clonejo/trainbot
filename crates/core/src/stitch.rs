@@ -3,6 +3,7 @@ use image::RgbaImage;
 use crate::{Config, Sequence, Train};
 use crate::fit::{FitMethod, fit_dx};
 use crate::gif::create_gif;
+use crate::metrics::{record_fit_and_stitch_result, record_sequence_length};
 
 /// Composite `frames` into a panoramic RGBA image using the integer offsets `dx`.
 ///
@@ -73,12 +74,17 @@ pub(crate) fn fit_and_stitch(mut seq: Sequence, config: &Config, method: FitMeth
         seq.ts.pop();
         seq.frames.pop();
     }
+    record_sequence_length(seq.frames.len());
 
     // max_px_per_frame(1) = max pixels/frame at 1 fps = max speed in px/s.
     let max_speed_px_s = config.max_px_per_frame(1.0) as f64;
-    let (dx_fit, ds, v0, a) = fit_dx(&seq, max_speed_px_s, method)?;
+    let (dx_fit, ds, v0, a) = fit_dx(&seq, max_speed_px_s, method).map_err(|e| {
+        record_fit_and_stitch_result("unable_to_fit");
+        e
+    })?;
 
     if ds < config.min_length_px() {
+        record_fit_and_stitch_result("too_short");
         return Err(format!(
             "too short: {ds:.1} < {:.1}",
             config.min_length_px()
@@ -96,6 +102,7 @@ pub(crate) fn fit_and_stitch(mut seq: Sequence, config: &Config, method: FitMeth
     let speed = v0 + a * t_mid;
 
     if speed.abs() < config.min_speed_px_ps() {
+        record_fit_and_stitch_result("too_slow");
         return Err(format!(
             "too slow: {:.1} < {:.1}",
             speed.abs(),
@@ -103,8 +110,12 @@ pub(crate) fn fit_and_stitch(mut seq: Sequence, config: &Config, method: FitMeth
         ));
     }
 
-    let img = stitch(&seq.frames, &dx_fit)?;
+    let img = stitch(&seq.frames, &dx_fit).map_err(|e| {
+        record_fit_and_stitch_result("unable_to_assemble_image");
+        e
+    })?;
     let gif_data = create_gif(&seq, &img);
+    record_fit_and_stitch_result("success");
 
     Ok(Train {
         start_ts: seq.ts[0],

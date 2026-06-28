@@ -2,6 +2,8 @@ mod auto;
 mod config;
 mod fit;
 mod gif;
+pub mod log;
+pub mod metrics;
 mod sequence;
 mod stitch;
 mod train;
@@ -9,6 +11,8 @@ mod train;
 pub use auto::AutoStitcher;
 pub use config::Config;
 pub use fit::FitMethod;
+pub use log::{LogConfig, init_logging};
+pub use metrics::init_metrics;
 pub use train::Train;
 
 use sequence::Sequence;
