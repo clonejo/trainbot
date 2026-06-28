@@ -1,4 +1,24 @@
+use thiserror::Error;
+
 use crate::sequence::Sequence;
+
+#[derive(Debug, Error)]
+pub(crate) enum FitLinearRobustError {
+    #[error("fit failed: too few inliers {found} < {min}")]
+    TooFewInliers { found: usize, min: usize },
+    #[error("OLS on inliers failed")]
+    OlsDegenerate,
+}
+
+#[derive(Debug, Error)]
+pub(crate) enum FitDxError {
+    #[error("sequence too short for fitting: {n} < 9")]
+    TooShort { n: usize },
+    #[error(transparent)]
+    RobustFit(#[from] FitLinearRobustError),
+    #[error("RANSAC fit failed: {0}")]
+    Ransac(#[from] ransac::Error),
+}
 
 /// Which robust fitting algorithm `fit_dx` uses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -56,7 +76,7 @@ fn fit_linear_robust(
     v: &[f64],
     threshold: f64,
     min_inliers: usize,
-) -> Result<[f64; 2], String> {
+) -> Result<[f64; 2], FitLinearRobustError> {
     // Robust initial estimate: median velocity, zero acceleration.
     let mut v_sorted = v.to_vec();
     v_sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
@@ -72,14 +92,14 @@ fn fit_linear_robust(
             .collect();
 
         if inliers.len() < min_inliers {
-            return Err(format!(
-                "fit failed: too few inliers {} < {min_inliers}",
-                inliers.len()
-            ));
+            return Err(FitLinearRobustError::TooFewInliers {
+                found: inliers.len(),
+                min: min_inliers,
+            });
         }
 
         let (it, iv): (Vec<f64>, Vec<f64>) = inliers.into_iter().unzip();
-        let new_params = ols_linear(&it, &iv).ok_or_else(|| "OLS on inliers failed".to_string())?;
+        let new_params = ols_linear(&it, &iv).ok_or(FitLinearRobustError::OlsDegenerate)?;
 
         if (new_params[0] - params[0]).abs() < 1e-10 && (new_params[1] - params[1]).abs() < 1e-10 {
             return Ok(new_params);
@@ -105,10 +125,10 @@ pub(crate) fn fit_dx(
     seq: &Sequence,
     max_speed_px_s: f64,
     method: FitMethod,
-) -> Result<(Vec<i32>, f64, f64, f64), String> {
+) -> Result<(Vec<i32>, f64, f64, f64), FitDxError> {
     let n = seq.dx.len();
     if n < 9 {
-        return Err(format!("sequence too short for fitting: {n} < 9"));
+        return Err(FitDxError::TooShort { n });
     }
 
     let start_ts = seq.start_ts.expect("start_ts must be set before fit_dx");
@@ -165,8 +185,7 @@ pub(crate) fn fit_dx(
                 inlier_threshold: threshold,
                 seed: 0,
             },
-        )
-        .map_err(|e| e.to_string())?,
+        )?,
     };
 
     // Regenerate integer dx from the fitted model, accumulating and

@@ -1,7 +1,7 @@
 use image::RgbaImage;
 use thiserror::Error;
 
-use crate::fit::{fit_dx, FitMethod};
+use crate::fit::{fit_dx, FitDxError, FitMethod};
 use crate::gif::create_gif;
 use crate::metrics::{record_fit_and_stitch_result, record_sequence_length};
 use crate::{Config, Sequence, Train};
@@ -19,7 +19,7 @@ pub(crate) enum StitchError {
 #[derive(Debug, Error)]
 pub(crate) enum FitAndStitchError {
     #[error("unable to fit: {0}")]
-    UnableToFit(String),
+    UnableToFit(#[from] FitDxError),
     #[error("too short: {actual:.1} < {min:.1}")]
     TooShort { actual: f64, min: f64 },
     #[error("too slow: {actual:.1} < {min:.1}")]
@@ -108,7 +108,7 @@ pub(crate) fn fit_and_stitch(
     let max_speed_px_s = config.max_px_per_frame(1.0) as f64;
     let (dx_fit, ds, v0, a) = fit_dx(&seq, max_speed_px_s, method).map_err(|e| {
         record_fit_and_stitch_result("unable_to_fit");
-        FitAndStitchError::UnableToFit(e)
+        FitAndStitchError::from(e)
     })?;
 
     if ds < config.min_length_px() {
