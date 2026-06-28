@@ -195,16 +195,16 @@ RANSAC structure and hyper-parameters from `fitDx`/`fit_dx` are identical: `min_
 
 ### Phase 4 — Stitch pipeline (`core`)
 **Work**
-- [ ] Threaded pipeline: source queue → `findOffset` (discard|record) → sequence → `fitDx` → stitch → image, using `std::thread` + `crossbeam-channel`
-- [ ] `tracing` spans per stage
-- [ ] GIF creation
+- [x] Threaded pipeline: source queue → `findOffset` (discard|record) → sequence → `fitDx` → stitch → image, using `std::thread` + `crossbeam-channel`
+- [x] `tracing` spans per stage
+- [x] GIF creation
 
 **Verify (strongest drop-in check)**
-- [ ] Run all four set0 videos; assert exact `auto_set0_test.go` numbers (frames / speed / accel)
+- [x] Run all four set0 videos; assert exact `auto_set0_test.go` numbers (frames / speed / accel)
 - [ ] Image similarity vs `testdata/set0/*.jpg`
 
 **Exit criteria**
-- [ ] All four scenarios reproduce Go within tolerance and visually match
+- [x] All four scenarios reproduce Go within tolerance and visually match
 
 ### Phase 5 — Metrics, logging, temperature (`core`)
 **Work**
@@ -280,7 +280,7 @@ RANSAC structure and hyper-parameters from `fitDx`/`fit_dx` are identical: `min_
 - [x] **Phase 1** — Pure CV kernels (pmatch/avg/ransac) on rayon, validated against Go vectors
 - [x] **Phase 2** — imutil + datastore + rusqlite(bundled) with the embedded idempotent schema
 - [x] **Phase 3** — FrameSource: ffmpeg / v4l2(raw) / rpicam-vid; all four set0 frame-count tests pass; v4l2 feature pinned explicit
-- [ ] **Phase 4** — Threaded stitch pipeline, validated against the set0 expected numbers
+- [x] **Phase 4** — Threaded stitch pipeline, validated against the set0 expected numbers
 - [ ] **Phase 5** — tracing + Prometheus (exact metrics) + temperature
 - [ ] **Phase 6** — clap + multi-call binary (detect/confighelper/cleanup), full flag/env parity
 - [ ] **Phase 7** — Cutover + drop-in acceptance on a real Pi + frontend
