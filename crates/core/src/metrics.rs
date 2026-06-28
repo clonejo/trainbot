@@ -4,14 +4,6 @@ use std::thread;
 
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder};
 
-/// Compute 20 exponentially-spaced bucket boundaries matching Go's
-/// `prometheus.ExponentialBucketsRange(0.0005, 1.0, 20)`.
-fn brightness_buckets() -> Vec<f64> {
-    let (start, end, n) = (0.0005_f64, 1.0_f64, 20usize);
-    let factor = (end / start).powf(1.0 / (n - 1) as f64);
-    (0..n).map(|i| start * factor.powi(i as i32)).collect()
-}
-
 /// Install the Prometheus recorder and serve `/metrics` on `addr`.
 ///
 /// Silently returns if a global recorder is already installed.
@@ -90,6 +82,14 @@ pub fn record_fit_and_stitch_result(result: &'static str) {
 pub fn record_brightness(avg: f64, avg_dev: f64) {
     metrics::histogram!("trainbot_brightness_avg").record(avg);
     metrics::histogram!("trainbot_brightness_avgdev").record(avg_dev);
+}
+
+/// Compute 20 exponentially-spaced bucket boundaries matching Go's
+/// `prometheus.ExponentialBucketsRange(0.0005, 1.0, 20)`.
+fn brightness_buckets() -> Vec<f64> {
+    let (start, end, n) = (0.0005_f64, 1.0_f64, 20usize);
+    let factor = (end / start).powf(1.0 / (n - 1) as f64);
+    (0..n).map(|i| start * factor.powi(i as i32)).collect()
 }
 
 #[cfg(test)]
