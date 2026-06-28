@@ -1,5 +1,21 @@
 use crate::sequence::Sequence;
 
+/// Which robust fitting algorithm `fit_dx` uses.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FitMethod {
+    /// Deterministic iterative OLS with median-seeded outlier rejection.
+    /// Matches Go within the standard test tolerances for all set0 videos.
+    #[default]
+    Ols,
+    /// RANSAC using `rand::SmallRng` (seed=0).
+    ///
+    /// **Deviation from Go**: Go uses `math/rand` (lagged-Fibonacci, seed=0); Rust's
+    /// `SmallRng` (Xorshift128+) produces a different random sequence, leading to
+    /// slightly different inlier sets.  For the snow video this causes a ~0.12 m/s
+    /// speed difference vs Go's output, which is outside the ±0.1 m/s test tolerance.
+    Ransac,
+}
+
 fn sign(x: f64) -> f64 {
     if x > 0.0 {
         1.0
@@ -85,16 +101,13 @@ fn fit_linear_robust(
 /// - `v0`     – velocity at t=0 [px/s] (t measured from `seq.start_ts`)
 /// - `a`      – acceleration [px/s²]
 ///
-/// **Deviation from Go**: Go's `fitDx` uses `pkg/ransac` with `math/rand` seeded
-/// at 0 (lagged-Fibonacci generator).  Rust's `rand::SmallRng` produces a different
-/// sequence, yielding slightly different inlier sets and therefore slightly different
-/// fitted parameters.  This was replaced with a deterministic iterative OLS
-/// (`fit_linear_robust`) that matches Go within the ±0.1 m/s / ±0.1 m/s² / ±5 m
-/// test tolerances for all set0 videos.  The same hyper-parameters are preserved:
+/// Both methods use the same hyper-parameters as Go's RANSAC:
 /// threshold = 5% of max speed, min_inliers = n/2.
+/// See `FitMethod` for per-method deviation notes.
 pub(crate) fn fit_dx(
     seq: &Sequence,
     max_speed_px_s: f64,
+    method: FitMethod,
 ) -> Result<(Vec<i32>, f64, f64, f64), String> {
     let n = seq.dx.len();
     if n < 9 {
@@ -141,8 +154,25 @@ pub(crate) fn fit_dx(
     let threshold = max_speed_px_s * 0.05;
     let min_inliers = v_fit.len() / 2;
 
-    let fit = fit_linear_robust(&t_fit, &v_fit, threshold, min_inliers)?;
-    let fit = fit.to_vec();
+    let fit: Vec<f64> = match method {
+        FitMethod::Ols => fit_linear_robust(&t_fit, &v_fit, threshold, min_inliers)?.to_vec(),
+        FitMethod::Ransac => {
+            ransac::ransac(
+                &t_fit,
+                &v_fit,
+                |t, p| p[0] + p[1] * t,
+                2,
+                ransac::MetaParams {
+                    min_model_points: 3,
+                    max_iter: 25,
+                    min_inliers,
+                    inlier_threshold: threshold,
+                    seed: 0,
+                },
+            )
+            .map_err(|e| e.to_string())?
+        }
+    };
 
     // Regenerate integer dx from the fitted model, accumulating and
     // redistributing rounding error to keep the sum consistent.

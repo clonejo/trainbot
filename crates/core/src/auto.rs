@@ -3,6 +3,7 @@ use std::time::SystemTime;
 use tracing::trace;
 
 use crate::{Config, Sequence, Train};
+use crate::fit::FitMethod;
 use crate::stitch::fit_and_stitch;
 
 const GOOD_COS_SCORE_NO_MOVE: f64 = 0.99;
@@ -18,6 +19,7 @@ const MIN_CONTRAST_AVG_DEV: f64 = 0.01;
 /// cosine-similarity patch matching, and calls `fit_and_stitch` when a sequence ends.
 pub struct AutoStitcher {
     config: Config,
+    fit_method: FitMethod,
     prev_ts: Option<SystemTime>,
     prev_frame: Option<RgbaImage>,
     seq: Sequence,
@@ -25,9 +27,10 @@ pub struct AutoStitcher {
 }
 
 impl AutoStitcher {
-    pub fn new(config: Config) -> Self {
+    pub fn new(config: Config, fit_method: FitMethod) -> Self {
         Self {
             config,
+            fit_method,
             prev_ts: None,
             prev_frame: None,
             seq: Sequence::new(),
@@ -82,7 +85,7 @@ impl AutoStitcher {
             return None;
         }
 
-        fit_and_stitch(seq, &self.config)
+        fit_and_stitch(seq, &self.config, self.fit_method)
             .map_err(|e| tracing::debug!("rejected sequence: {e}"))
             .ok()
     }

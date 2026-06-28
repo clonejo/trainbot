@@ -6,3 +6,6 @@ edition = "2024"
 [[bin]]
 name = "trainbot"
 path = "src/main.rs"
+
+[dependencies]
+trainbot-core = { path = "../../crates/core" }

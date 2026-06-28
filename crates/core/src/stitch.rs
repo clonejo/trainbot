@@ -1,7 +1,7 @@
 use image::RgbaImage;
 
 use crate::{Config, Sequence, Train};
-use crate::fit::fit_dx;
+use crate::fit::{FitMethod, fit_dx};
 use crate::gif::create_gif;
 
 /// Composite `frames` into a panoramic RGBA image using the integer offsets `dx`.
@@ -66,7 +66,7 @@ pub(crate) fn stitch(frames: &[RgbaImage], dx: &[i32]) -> Result<RgbaImage, Stri
 ///
 /// Modifies `seq` in-place (strips trailing zero-dx entries).
 /// Returns `Err` with a descriptive message if the sequence is rejected.
-pub(crate) fn fit_and_stitch(mut seq: Sequence, config: &Config) -> Result<Train, String> {
+pub(crate) fn fit_and_stitch(mut seq: Sequence, config: &Config, method: FitMethod) -> Result<Train, String> {
     // Strip trailing zero-dx frames (mirrors Go's `fitAndStitch`).
     while !seq.dx.is_empty() && *seq.dx.last().unwrap() == 0 {
         seq.dx.pop();
@@ -76,7 +76,7 @@ pub(crate) fn fit_and_stitch(mut seq: Sequence, config: &Config) -> Result<Train
 
     // max_px_per_frame(1) = max pixels/frame at 1 fps = max speed in px/s.
     let max_speed_px_s = config.max_px_per_frame(1.0) as f64;
-    let (dx_fit, ds, v0, a) = fit_dx(&seq, max_speed_px_s)?;
+    let (dx_fit, ds, v0, a) = fit_dx(&seq, max_speed_px_s, method)?;
 
     if ds < config.min_length_px() {
         return Err(format!(

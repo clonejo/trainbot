@@ -1339,6 +1339,9 @@ dependencies = [
 [[package]]
 name = "trainbot"
 version = "0.1.0"
+dependencies = [
+ "trainbot-core",
+]
 
 [[package]]
 name = "trainbot-core"

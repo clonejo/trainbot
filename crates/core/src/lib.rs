@@ -8,6 +8,7 @@ mod train;
 
 pub use auto::AutoStitcher;
 pub use config::Config;
+pub use fit::FitMethod;
 pub use train::Train;
 
 use sequence::Sequence;
@@ -20,8 +21,9 @@ pub fn run_pipeline(
     src: &mut dyn vid::FrameSource,
     config: Config,
     crop: Option<(u32, u32, u32, u32)>,
+    fit_method: FitMethod,
 ) -> Vec<Train> {
-    let mut stitcher = AutoStitcher::new(config);
+    let mut stitcher = AutoStitcher::new(config, fit_method);
     let mut trains = Vec::new();
 
     loop {
