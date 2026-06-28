@@ -3,6 +3,8 @@ use chrono::{DateTime, Utc};
 use clap::Parser;
 use image::DynamicImage;
 use rusqlite::Connection;
+use tracing::{info, warn};
+
 use store::{DataStore, queries};
 use trainbot_core::{AutoStitcher, Config, FitMethod, Train, init_logging, init_metrics};
 use vid::{FourCC, FrameSource};
@@ -12,7 +14,7 @@ use crate::args::DetectArgs;
 const MAX_FAILED_FRAMES: usize = 50;
 const MAX_JPEG_DIM: u32 = 32767;
 const RECT_SIZE_MIN: u32 = 100;
-const RECT_SIZE_MAX: u32 = 500;
+const RECT_SIZE_MAX_WARN: u32 = 500;
 
 pub fn run(argv: Vec<String>) {
     let args = DetectArgs::parse_from(argv);
@@ -30,9 +32,8 @@ pub fn run(argv: Vec<String>) {
         eprintln!("error: rect too small (minimum {} px)", RECT_SIZE_MIN);
         std::process::exit(2);
     }
-    if args.rect_w > RECT_SIZE_MAX || args.rect_h > RECT_SIZE_MAX {
-        eprintln!("error: rect too large (maximum {} px)", RECT_SIZE_MAX);
-        std::process::exit(2);
+    if args.rect_w > RECT_SIZE_MAX_WARN || args.rect_h > RECT_SIZE_MAX_WARN {
+        warn!("rect is very wide (over {} px). Live processing may not keep up.", RECT_SIZE_MAX_WARN);
     }
 
     if args.prometheus {
