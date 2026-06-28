@@ -33,7 +33,10 @@ pub fn run(argv: Vec<String>) {
         std::process::exit(2);
     }
     if args.rect_w > RECT_SIZE_MAX_WARN || args.rect_h > RECT_SIZE_MAX_WARN {
-        warn!("rect is very wide (over {} px). Live processing may not keep up.", RECT_SIZE_MAX_WARN);
+        warn!(
+            "rect is very wide (over {} px). Live processing may not keep up.",
+            RECT_SIZE_MAX_WARN
+        );
     }
 
     if args.prometheus {
@@ -98,9 +101,10 @@ pub fn run(argv: Vec<String>) {
                     frame.image
                 };
                 if let Some(train) = stitcher.frame(img, frame.ts)
-                    && let Err(e) = save_train(&train, &ds, &conn) {
-                        tracing::error!(err = %e, "failed to save train");
-                    }
+                    && let Err(e) = save_train(&train, &ds, &conn)
+                {
+                    tracing::error!(err = %e, "failed to save train");
+                }
             }
             Ok(None) => break,
             Err(e) => {
@@ -114,9 +118,10 @@ pub fn run(argv: Vec<String>) {
     }
 
     if let Some(train) = stitcher.try_stitch_and_reset()
-        && let Err(e) = save_train(&train, &ds, &conn) {
-            tracing::error!(err = %e, "failed to save final train");
-        }
+        && let Err(e) = save_train(&train, &ds, &conn)
+    {
+        tracing::error!(err = %e, "failed to save final train");
+    }
 }
 
 fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn FrameSource>> {
@@ -140,17 +145,18 @@ fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn Fram
     {
         use std::os::unix::fs::FileTypeExt;
         if let Ok(meta) = std::fs::metadata(&args.input)
-            && meta.file_type().is_char_device() {
-                return Ok(Box::new(
-                    vid::CamSrc::open(vid::CamConfig {
-                        device: args.input.clone(),
-                        fourcc,
-                        width: args.camera_w,
-                        height: args.camera_h,
-                    })
-                    .context("open CamSrc")?,
-                ));
-            }
+            && meta.file_type().is_char_device()
+        {
+            return Ok(Box::new(
+                vid::CamSrc::open(vid::CamConfig {
+                    device: args.input.clone(),
+                    fourcc,
+                    width: args.camera_w,
+                    height: args.camera_h,
+                })
+                .context("open CamSrc")?,
+            ));
+        }
     }
 
     Ok(Box::new(

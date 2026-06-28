@@ -72,13 +72,14 @@ pub fn run(argv: Vec<String>) {
         match src.next_frame() {
             Ok(Some(frame)) => {
                 if frame_idx.is_multiple_of(every_nth)
-                    && let Ok(jpeg) = encode_jpeg(&frame.image) {
-                        let (lock, cvar) = &*shared;
-                        let mut state = lock.lock().unwrap();
-                        state.jpeg = Some(jpeg);
-                        state.seq += 1;
-                        cvar.notify_all();
-                    }
+                    && let Ok(jpeg) = encode_jpeg(&frame.image)
+                {
+                    let (lock, cvar) = &*shared;
+                    let mut state = lock.lock().unwrap();
+                    state.jpeg = Some(jpeg);
+                    state.seq += 1;
+                    cvar.notify_all();
+                }
                 frame_idx += 1;
             }
             Ok(None) => {
@@ -114,17 +115,18 @@ fn open_source(args: &ConfighelperArgs) -> anyhow::Result<Box<dyn FrameSource>> 
     {
         use std::os::unix::fs::FileTypeExt;
         if let Ok(meta) = std::fs::metadata(&args.input)
-            && meta.file_type().is_char_device() {
-                return Ok(Box::new(
-                    vid::CamSrc::open(vid::CamConfig {
-                        device: args.input.clone(),
-                        fourcc: FourCC::MJPG,
-                        width: args.camera_w,
-                        height: args.camera_h,
-                    })
-                    .map_err(|e| anyhow::anyhow!("{e}"))?,
-                ));
-            }
+            && meta.file_type().is_char_device()
+        {
+            return Ok(Box::new(
+                vid::CamSrc::open(vid::CamConfig {
+                    device: args.input.clone(),
+                    fourcc: FourCC::MJPG,
+                    width: args.camera_w,
+                    height: args.camera_h,
+                })
+                .map_err(|e| anyhow::anyhow!("{e}"))?,
+            ));
+        }
     }
 
     Ok(Box::new(
