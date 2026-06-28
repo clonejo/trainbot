@@ -89,7 +89,7 @@ impl AutoStitcher {
         }
 
         fit_and_stitch(seq, &self.config, self.fit_method)
-            .map_err(|e| tracing::debug!("rejected sequence: {e}"))
+            .map_err(|e| tracing::warn!("rejected sequence: {e}"))
             .ok()
     }
 
