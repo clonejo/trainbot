@@ -9,3 +9,13 @@ path = "src/main.rs"
 
 [dependencies]
 trainbot-core = { path = "../../crates/core" }
+store = { path = "../../crates/store" }
+vid = { path = "../../crates/vid" }
+imutil = { path = "../../crates/imutil" }
+image = { workspace = true, features = ["jpeg", "png"] }
+chrono = { workspace = true }
+rusqlite = { workspace = true }
+clap = { workspace = true }
+anyhow = { workspace = true }
+serde_json = { workspace = true }
+tracing = "0.1"

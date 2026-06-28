@@ -1,23 +1,44 @@
-use trainbot_core::FitMethod;
+mod args;
+mod cleanup;
+mod confighelper;
+mod detect;
 
-fn parse_args() -> FitMethod {
-    for arg in std::env::args().skip(1) {
-        if let Some(val) = arg.strip_prefix("--fit-method=") {
-            match val {
-                "ols" => return FitMethod::Ols,
-                "ransac" => return FitMethod::Ransac,
-                other => {
-                    eprintln!("trainbot: unknown --fit-method value: {other:?} (expected ols|ransac)");
-                    std::process::exit(2);
-                }
-            }
+fn basename_no_arch(argv0: &str) -> &str {
+    let base = argv0.rsplit('/').next().unwrap_or(argv0);
+    // Strip arch suffixes like -x86_64, -aarch64, -arm64
+    if let Some(pos) = base.rfind('-') {
+        let suffix = &base[pos + 1..];
+        if matches!(suffix, "x86_64" | "aarch64" | "arm64" | "amd64") {
+            return &base[..pos];
         }
     }
-    FitMethod::Ols
+    base
 }
 
 fn main() {
-    let _fit_method = parse_args();
-    eprintln!("trainbot: not yet implemented (Phase 0 stub)");
-    std::process::exit(1);
+    let mut argv: Vec<String> = std::env::args().collect();
+    let base = basename_no_arch(argv.first().map(|s| s.as_str()).unwrap_or("trainbot"));
+
+    match base {
+        "confighelper" => confighelper::run(argv),
+        "cleanup" => cleanup::run(argv),
+        _ => {
+            // Check if first positional arg is a known subcommand name
+            match argv.get(1).map(|s| s.as_str()) {
+                Some("confighelper") => {
+                    argv.remove(1);
+                    confighelper::run(argv);
+                }
+                Some("cleanup") => {
+                    argv.remove(1);
+                    cleanup::run(argv);
+                }
+                Some("detect") => {
+                    argv.remove(1);
+                    detect::run(argv);
+                }
+                _ => detect::run(argv),
+            }
+        }
+    }
 }

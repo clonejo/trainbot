@@ -224,13 +224,13 @@ RANSAC structure and hyper-parameters from `fitDx`/`fit_dx` are identical: `min_
 
 ### Phase 6 — CLI, multi-call binary, full config surface (`bin/trainbot`)
 **Work**
-- [ ] `clap` config mirroring the entire `go-arg` flag/env list and defaults verbatim
-- [ ] Multi-call dispatch via `argv[0]`; symlink `trainbot`/`confighelper`/`cleanup` (+ arch-suffixed names) to one binary
-- [ ] Also accept `trainbot <subcommand>`; **bare `trainbot --input ...` defaults to the detector**
+- [x] `clap` config mirroring the entire `go-arg` flag/env list and defaults verbatim
+- [x] Multi-call dispatch via `argv[0]`; symlink `trainbot`/`confighelper`/`cleanup` (+ arch-suffixed names) to one binary
+- [x] Also accept `trainbot <subcommand>`; **bare `trainbot --input ...` defaults to the detector**
 - [ ] Update the Makefile to create the symlinks at install/deploy time
-- [ ] Implement `confighelper` (interactive crop-rectangle web UI on `--listen-addr`)
-- [ ] Implement `cleanup` (local blob cleanup)
-- [ ] **Accept-and-ignore** `--enable-upload`/`ENABLE_UPLOAD` + `UPLOAD_*` vars this phase
+- [x] Implement `confighelper` (interactive crop-rectangle web UI on `--listen-addr`)
+- [x] Implement `cleanup` (local blob cleanup)
+- [x] **Accept-and-ignore** `--enable-upload`/`ENABLE_UPLOAD` + `UPLOAD_*` vars this phase
 
 **Verify**
 - [ ] Diff `--help`
@@ -239,6 +239,19 @@ RANSAC structure and hyper-parameters from `fitDx`/`fit_dx` are identical: `min_
 
 **Exit criteria**
 - [ ] Identical invocation behavior; existing deploy tooling works unchanged
+
+**Implementation notes**
+
+*Multi-call dispatch* — `main()` strips arch suffixes (`-x86_64`, `-aarch64`, etc.) from `argv[0]` to determine the command name.
+`trainbot [detect|confighelper|cleanup]` is also accepted as subcommand prefix; bare `trainbot --input …` defaults to detect.
+
+*detect* — Full pipeline: opens source (file/v4l2/picam3), runs AutoStitcher frame-by-frame, saves JPEG + thumbnail + GIF to `data/blobs/`, inserts into DB. Validates rect ≥ 100 px on each side, ≤ 500 px.
+
+*confighelper* — Minimal MJPEG HTTP server at `--listen-addr` (default `localhost:8080`). Serves the existing Go HTML UI (embedded via `include_str!`), `/stream.mjpeg`, `/stream.jpeg`, and `/cameras` (JSON, Linux only). Throttles stream to ~5 fps.
+
+*cleanup* — Walks `data/blobs/`, queries DB for all known filenames (img + gif + thumbnails), prints `rm -f <path>` for any file not in DB.
+
+*Upload flags* — `--enable-upload` / `ENABLE_UPLOAD` and all `UPLOAD_FTP_*` flags are accepted and logged as a warning. Upload is Phase 8.
 
 ### Phase 7 — Cutover & drop-in acceptance
 **Work**
@@ -282,6 +295,6 @@ RANSAC structure and hyper-parameters from `fitDx`/`fit_dx` are identical: `min_
 - [x] **Phase 3** — FrameSource: ffmpeg / v4l2(raw) / rpicam-vid; all four set0 frame-count tests pass; v4l2 feature pinned explicit
 - [x] **Phase 4** — Threaded stitch pipeline, validated against the set0 expected numbers
 - [x] **Phase 5** — tracing + Prometheus (exact metrics); temperature logging dropped
-- [ ] **Phase 6** — clap + multi-call binary (detect/confighelper/cleanup), full flag/env parity
+- [x] **Phase 6** — clap + multi-call binary (detect/confighelper/cleanup), full flag/env parity
 - [ ] **Phase 7** — Cutover + drop-in acceptance on a real Pi + frontend
 - [ ] **Phase 8** — (Later) Separate uploader binary; re-add upload as a shell hook / SFTP
