@@ -178,7 +178,7 @@ pub struct DetectArgs {
     #[arg(
         long,
         env = "PROMETHEUS_LISTEN",
-        default_value = ":18963",
+        default_value = "[::]:18963",
         help = "Prometheus endpoint bind address"
     )]
     pub prometheus_listen: String,
