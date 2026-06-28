@@ -140,6 +140,17 @@ Validate the cheap, pure things first, then I/O, then the pipeline, then CLI/dep
 
 *ransac* — Uses Levenberg-Marquardt with numerical Jacobian (nalgebra SVD solve). `rand::SmallRng` seeded from `MetaParams::seed`. The RNG stream differs from Go's `math/rand`, but the algorithm still converges to the correct parameters within the Go test tolerances.
 
+Differences vs the Go implementation (`pkg/ransac/ransac.go`):
+
+| Aspect | Go | Rust |
+|---|---|---|
+| **RNG** | `math/rand` lagged-Fibonacci, `Seed int64` | `rand::SmallRng` Xorshift128+, `seed u64`; same value (0) but different sequence |
+| **Curve fitter** | `go-hep/fit.Curve1D` → `gonum/optimize` (LM, internal Jacobian) | custom LM: 300 iter, λ=1e-3, numerical Jacobian (step=1e-7), nalgebra SVD solve |
+| **Initial params** | `nil` passed to `fit.Curve1D` (go-hep treats as zeros) | explicit `vec![0.0; n_params]` |
+| **Extra validation** | panics if `MinModelPoints > nx*3/4` | no such check |
+
+RANSAC structure and hyper-parameters from `fitDx`/`fit_dx` are identical: `min_model_points=3`, `max_iter=25`, `min_inliers=n/2`, `threshold=maxSpeed×0.05`, `seed=0`. The RNG divergence is the dominant practical difference and causes a ~0.12 m/s speed delta on the snow video (outside the ±0.1 m/s tolerance), which is why `FitMethod::Ols` is the default in `crates/core/src/fit.rs`.
+
 *avg test data* — Go's `image/jpeg` and Rust's `zune-jpeg` decode the same JPEG to different pixel values (different DCT rounding). Solution: saved `pkg/avg/testdata/{high,mid,low}.png` using Go's decoder; Rust tests load those PNGs so both operate on bit-identical pixel data. Tolerances are tight (1e-5) since the arithmetic is integer-exact.
 
 *pmatch cross-check* — Same decoder-divergence issue applies to `score_rgba_cos`. Saved `pkg/pmatch/testdata/bird.png` from Go's decoder; `test_score_rgba_cos_known_offset` loads this PNG and asserts 3 known offsets match Go's `ScoreRGBACosSlow` values within 1e-12. Criterion benchmarks wired in `benches/bench.rs` (`score_rgba_cos`, `search_rgba`); run `cargo bench -p pmatch` to compare throughput against the C+OpenMP baseline.
