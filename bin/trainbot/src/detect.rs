@@ -22,10 +22,6 @@ pub fn run(argv: Vec<String>) {
         log_level: args.log_level.clone(),
     });
 
-    if args.enable_upload {
-        tracing::warn!("--enable-upload is set but upload is not yet implemented (Phase 8); ignored");
-    }
-
     if args.rect_w == 0 || args.rect_h == 0 {
         eprintln!("error: no rect set (use --rect-.. parameters to set crop region)");
         std::process::exit(2);

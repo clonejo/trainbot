@@ -57,20 +57,6 @@ pub struct DetectArgs {
     #[arg(long, env = "HEAP_PROFILE", help = "Write memory heap profiles (accepted, no-op in Rust build)")]
     pub heap_profile: bool,
 
-    // Upload (accepted-and-ignored; upload is Phase 8)
-    #[arg(long, env = "ENABLE_UPLOAD", help = "Enable uploading of data (not yet implemented; accepted for compat)")]
-    pub enable_upload: bool,
-    #[arg(long, env = "UPLOAD_FTP_HOST", value_name = "HOST", help = "FTP hostname")]
-    pub upload_ftp_host: Option<String>,
-    #[arg(long, env = "UPLOAD_FTP_PORT", default_value_t = 21, value_name = "PORT", help = "FTP port")]
-    pub upload_ftp_port: u16,
-    #[arg(long, env = "UPLOAD_FTP_USER", value_name = "USER", help = "FTP username")]
-    pub upload_ftp_user: Option<String>,
-    #[arg(long, env = "UPLOAD_FTP_PASSWORD", value_name = "PASS", help = "FTP password")]
-    pub upload_ftp_password: Option<String>,
-    #[arg(long, env = "UPLOAD_FTP_PWD", default_value = ".", value_name = "DIR", help = "FTP working directory")]
-    pub upload_ftp_pwd: String,
-
     // Prometheus
     #[arg(long, env = "PROMETHEUS", default_value_t = false, help = "Expose Prometheus-compatible metrics endpoint")]
     pub prometheus: bool,
