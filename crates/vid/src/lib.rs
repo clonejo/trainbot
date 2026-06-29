@@ -3,6 +3,7 @@ mod fcc;
 mod ffprobe;
 mod file;
 mod jpeg_scan;
+mod mjpeg_http;
 mod picam3;
 
 #[cfg(target_os = "linux")]
@@ -11,6 +12,7 @@ mod cam;
 pub use fcc::FourCC;
 pub use file::FileSrc;
 pub use jpeg_scan::JpegScanner;
+pub use mjpeg_http::MjpegHttpSrc;
 pub use picam3::{PiCam3Config, PiCam3Src};
 
 #[cfg(target_os = "linux")]
@@ -37,6 +39,8 @@ pub enum Error {
     Process(String),
     #[error("format error: {0}")]
     Format(String),
+    #[error("http: {0}")]
+    Http(#[from] mjpeg_http::HttpError),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

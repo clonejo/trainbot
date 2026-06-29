@@ -125,6 +125,12 @@ pub fn run(argv: Vec<String>) {
 }
 
 fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn FrameSource>> {
+    if args.input.starts_with("http://") || args.input.starts_with("https://") {
+        return Ok(Box::new(
+            vid::MjpegHttpSrc::open(&args.input).context("open MjpegHttpSrc")?,
+        ));
+    }
+
     if args.input == "picam3" {
         return Ok(Box::new(
             vid::PiCam3Src::open(vid::PiCam3Config {
