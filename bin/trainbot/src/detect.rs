@@ -1,3 +1,5 @@
+use std::time::{Duration,SystemTime};
+
 use anyhow::Context;
 use chrono::{DateTime, Utc};
 use clap::Parser;
@@ -91,9 +93,14 @@ pub fn run(argv: Vec<String>) {
     let mut stitcher = AutoStitcher::new(config, fit_method);
     let mut failed_frames: usize = 0;
 
+    let mut next_frame_ts = SystemTime::now();
     loop {
         match src.next_frame() {
-            Ok(Some(frame)) => {
+            Ok(Some(mut frame)) => {
+                if let Some(dt) = args.constant_frame_time_micros {
+                    frame.ts = next_frame_ts;
+                    next_frame_ts += Duration::from_micros(dt);
+                }
                 failed_frames = 0;
                 let img = if let Some((x, y, w, h)) = crop {
                     image::imageops::crop_imm(&frame.image, x, y, w, h).to_image()

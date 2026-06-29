@@ -43,6 +43,12 @@ pub struct DetectArgs {
     pub camera_format_fourcc: String,
     #[arg(
         long,
+        env,
+        help = "This option should not typically be needed. By default, we use the current wall clock time as the timestamp for each frame as it comes in. For video files the PTS is used. If your input framerate is constant, but the system time when trainbot consumes frames is too jittery, setting this may help against 'unable to fit' errors. In microseconds."
+    )]
+    pub constant_frame_time_micros: Option<u64>,
+    #[arg(
+        long,
         env = "CAMERA_W",
         default_value_t = 1920,
         value_name = "X",
