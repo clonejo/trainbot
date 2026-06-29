@@ -21,6 +21,7 @@ use sequence::Sequence;
 ///
 /// Optionally crops each frame to `(x, y, w, h)` before processing.
 /// Returns all detected trains in order of detection.
+/// FIXME: unused
 pub fn run_pipeline(
     src: &mut dyn vid::FrameSource,
     config: Config,
