@@ -31,14 +31,15 @@ pub(crate) enum FitAndStitchError {
 /// Composite `frames` into a panoramic RGBA image using the integer offsets `dx`.
 ///
 /// All dx values must have the same sign (direction of motion).
-///
-/// **Deviation from Go**: Go's `stitch()` accepts an optional mask and switches
-/// between `draw.Src` (no mask — replaces destination pixels wholesale) and
-/// `draw.Over` (mask — alpha compositing).  This implementation always uses
-/// `image::imageops::overlay` (Porter-Duff Over).  For opaque video frames
-/// (alpha=255 throughout) the two are pixel-identical.  Masked compositing is
-/// not implemented; `Config::mask` is currently ignored.
-pub(crate) fn stitch(frames: &[RgbaImage], dx: &[i32]) -> Result<RgbaImage, StitchError> {
+/// When `mask` is provided, each frame pixel is composited with the mask's alpha
+/// channel as the effective source alpha (Porter-Duff Over), matching Go's
+/// `draw.DrawMask(..., draw.Over)`.  Without a mask, `imageops::overlay` is used
+/// (equivalent to `draw.Src` for opaque frames).
+pub(crate) fn stitch(
+    frames: &[RgbaImage],
+    dx: &[i32],
+    mask: Option<&RgbaImage>,
+) -> Result<RgbaImage, StitchError> {
     if dx.len() < 2 {
         return Err(StitchError::TooShort);
     }
@@ -72,19 +73,67 @@ pub(crate) fn stitch(frames: &[RgbaImage], dx: &[i32]) -> Result<RgbaImage, Stit
         // Forward (leftward train): earlier frames on the left.
         let mut pos: i64 = 0;
         for (i, frame) in frames.iter().enumerate() {
-            image::imageops::overlay(&mut img, frame, pos, 0);
+            composite(&mut img, frame, mask, pos, 0);
             pos += dx[i] as i64;
         }
     } else {
         // Backward (rightward train): earlier frames on the right.
         let mut pos: i64 = (-w - fw) as i64;
         for (i, frame) in frames.iter().enumerate() {
-            image::imageops::overlay(&mut img, frame, pos, 0);
+            composite(&mut img, frame, mask, pos, 0);
             pos += dx[i] as i64;
         }
     }
 
     Ok(img)
+}
+
+/// Porter-Duff Over: draws `frame` onto `dst` at (`x`, `y`), optionally gated
+/// by `mask`'s alpha channel.  Matches Go's `draw.DrawMask(..., draw.Over)` when
+/// a mask is present, and `image::imageops::overlay` (same Op) when not.
+///
+/// **Assumes opaque frames** (src alpha = 255 for all pixels), which is always
+/// true for video frames.  Under that assumption the effective source alpha is
+/// simply `mask_a`, and the Porter-Duff Over formula reduces to:
+///
+/// ```text
+/// out_a  = mask_a + dst_a * (255 - mask_a) / 255
+/// out_ch = (src_ch * mask_a + dst_ch * dst_a * (255 - mask_a) / 255) / out_a
+/// ```
+fn composite(dst: &mut RgbaImage, frame: &RgbaImage, mask: Option<&RgbaImage>, x: i64, y: i64) {
+    match mask {
+        None => image::imageops::overlay(dst, frame, x, y),
+        Some(mask) => {
+            let dst_w = dst.width() as i64;
+            let dst_h = dst.height() as i64;
+            for (fx, fy, src) in frame.enumerate_pixels() {
+                let mask_a = mask.get_pixel(fx, fy)[3] as u32;
+                if mask_a == 0 {
+                    continue;
+                }
+                let px = x + fx as i64;
+                let py = y + fy as i64;
+                if px < 0 || py < 0 || px >= dst_w || py >= dst_h {
+                    continue;
+                }
+                // src alpha = 255 (opaque frame), so effective src_a = mask_a.
+                let inv_mask_a = 255 - mask_a;
+                let dst_px = dst.get_pixel_mut(px as u32, py as u32);
+                let dst_a = dst_px[3] as u32;
+                let out_a = mask_a + dst_a * inv_mask_a / 255;
+                if out_a == 0 {
+                    continue;
+                }
+                dst_px[0] = ((src[0] as u32 * mask_a + dst_px[0] as u32 * dst_a * inv_mask_a / 255)
+                    / out_a) as u8;
+                dst_px[1] = ((src[1] as u32 * mask_a + dst_px[1] as u32 * dst_a * inv_mask_a / 255)
+                    / out_a) as u8;
+                dst_px[2] = ((src[2] as u32 * mask_a + dst_px[2] as u32 * dst_a * inv_mask_a / 255)
+                    / out_a) as u8;
+                dst_px[3] = out_a as u8;
+            }
+        }
+    }
 }
 
 /// Fit the constant-acceleration model, validate, stitch frames, and create GIF.
@@ -137,7 +186,7 @@ pub(crate) fn fit_and_stitch(
         });
     }
 
-    let img = stitch(&seq.frames, &dx_fit).map_err(|e| {
+    let img = stitch(&seq.frames, &dx_fit, config.mask.as_ref()).map_err(|e| {
         record_fit_and_stitch_result("unable_to_assemble_image");
         FitAndStitchError::from(e)
     })?;
