@@ -82,15 +82,16 @@ impl AutoStitcher {
     pub fn try_stitch_and_reset(&mut self) -> Option<Train> {
         let seq = std::mem::replace(&mut self.seq, Sequence::new());
         self.dx_abs_low_pass = 0.0;
-        record_sequence_length(0);
 
         if seq.is_empty() {
             return None;
         }
 
-        fit_and_stitch(seq, &self.config, self.fit_method)
+        let result = fit_and_stitch(seq, &self.config, self.fit_method)
             .map_err(|e| tracing::warn!("rejected sequence: {e}"))
-            .ok()
+            .ok();
+        record_sequence_length(0);
+        result
     }
 
     /// Core per-frame logic (called with the current frame and previous state).

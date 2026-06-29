@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::fit::{fit_dx, FitDxError, FitMethod};
 use crate::gif::create_gif;
-use crate::metrics::{record_fit_and_stitch_result, record_sequence_length};
+use crate::metrics::record_fit_and_stitch_result;
 use crate::{Config, Sequence, Train};
 
 #[derive(Debug, Error)]
@@ -151,8 +151,6 @@ pub(crate) fn fit_and_stitch(
         seq.ts.pop();
         seq.frames.pop();
     }
-    record_sequence_length(seq.frames.len());
-
     // max_px_per_frame(1) = max pixels/frame at 1 fps = max speed in px/s.
     let max_speed_px_s = config.max_px_per_frame(1.0) as f64;
     let (dx_fit, ds, v0, a) = fit_dx(&seq, max_speed_px_s, method).map_err(|e| {
