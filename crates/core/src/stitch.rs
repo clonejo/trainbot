@@ -59,7 +59,7 @@ pub(crate) fn stitch(
     let img_w = w.unsigned_abs();
     let img_h = fh as u32;
 
-    const MAX_MEMORY_BYTES: usize = 1024 * 1024 * 50;
+    const MAX_MEMORY_BYTES: usize = 1024 * 1024 * 100;
     if (img_w as usize) * (img_h as usize) * 4 > MAX_MEMORY_BYTES {
         return Err(StitchError::TooLarge {
             width: img_w,
