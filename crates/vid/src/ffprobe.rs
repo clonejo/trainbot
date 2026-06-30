@@ -41,10 +41,9 @@ pub fn probe(path: &str) -> Result<VideoInfo> {
     )
     .stdout_capture()
     .run()
-    .map_err(|e| Error::Probe(format!("failed to run ffprobe: {e}")))?;
+    .map_err(Error::ProbeRun)?;
 
-    let parsed: ProbeOutput = serde_json::from_slice(&out.stdout)
-        .map_err(|e| Error::Probe(format!("bad ffprobe JSON: {e}")))?;
+    let parsed: ProbeOutput = serde_json::from_slice(&out.stdout).map_err(Error::ProbeJson)?;
 
     let video: Vec<_> = parsed
         .streams
@@ -58,17 +57,13 @@ pub fn probe(path: &str) -> Result<VideoInfo> {
         _ => return Err(Error::MultipleVideoStreams),
     };
 
-    let width = stream
-        .width
-        .ok_or_else(|| Error::Probe("missing width".into()))?;
-    let height = stream
-        .height
-        .ok_or_else(|| Error::Probe("missing height".into()))?;
+    let width = stream.width.ok_or(Error::ProbeMissing("width"))?;
+    let height = stream.height.ok_or(Error::ProbeMissing("height"))?;
     let fps = parse_fps(
         stream
             .avg_frame_rate
             .as_deref()
-            .ok_or_else(|| Error::Probe("missing avg_frame_rate".into()))?,
+            .ok_or(Error::ProbeMissing("avg_frame_rate"))?,
     )?;
 
     let start_time = stream

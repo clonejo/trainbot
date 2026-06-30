@@ -92,7 +92,7 @@ impl PiCam3Src {
         let reader = duct::cmd("rpicam-vid", &args)
             .stderr_null()
             .reader()
-            .map_err(|e| Error::Process(format!("failed to spawn rpicam-vid: {e}")))?;
+            .map_err(Error::ProcessSpawn)?;
 
         let inner = if cfg.format == FourCC::MJPG {
             Inner::Mjpeg(JpegScanner::new(reader))

@@ -32,7 +32,7 @@ impl FileSrc {
             "pipe:1"
         )
         .reader()
-        .map_err(|e| Error::Process(format!("failed to spawn ffmpeg: {e}")))?;
+        .map_err(Error::ProcessSpawn)?;
 
         Ok(Self {
             reader,

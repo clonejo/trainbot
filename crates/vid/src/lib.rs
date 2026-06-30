@@ -25,8 +25,12 @@ use std::time::SystemTime;
 pub enum Error {
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
-    #[error("probe failed: {0}")]
-    Probe(String),
+    #[error("failed to run ffprobe: {0}")]
+    ProbeRun(std::io::Error),
+    #[error("bad ffprobe output: {0}")]
+    ProbeJson(serde_json::Error),
+    #[error("ffprobe output missing field: {0}")]
+    ProbeMissing(&'static str),
     #[error("image error: {0}")]
     Image(#[from] image::ImageError),
     #[error("no video stream found")]
@@ -35,6 +39,8 @@ pub enum Error {
     MultipleVideoStreams,
     #[error("invalid fps string: {0}")]
     InvalidFps(String),
+    #[error("failed to spawn process: {0}")]
+    ProcessSpawn(std::io::Error),
     #[error("process error: {0}")]
     Process(String),
     #[error("format error: {0}")]

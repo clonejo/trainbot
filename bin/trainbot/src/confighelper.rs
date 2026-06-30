@@ -4,6 +4,7 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;
 
+use anyhow::Context;
 use clap::Parser;
 use image::DynamicImage;
 use trainbot_core::{LogConfig, init_logging};
@@ -107,7 +108,7 @@ fn open_source(args: &ConfighelperArgs) -> anyhow::Result<Box<dyn FrameSource>> 
                 format: FourCC::MJPG,
                 fps: 5,
             })
-            .map_err(|e| anyhow::anyhow!("{e}"))?,
+            .context("open PiCam3Src")?,
         ));
     }
 
@@ -124,13 +125,13 @@ fn open_source(args: &ConfighelperArgs) -> anyhow::Result<Box<dyn FrameSource>> 
                     width: args.camera_w,
                     height: args.camera_h,
                 })
-                .map_err(|e| anyhow::anyhow!("{e}"))?,
+                .context("open CamSrc")?,
             ));
         }
     }
 
     Ok(Box::new(
-        vid::FileSrc::open(&args.input).map_err(|e| anyhow::anyhow!("{e}"))?,
+        vid::FileSrc::open(&args.input).context("open FileSrc")?,
     ))
 }
 
@@ -159,13 +160,12 @@ fn probe_cameras() {
     }
 }
 
-fn encode_jpeg(img: &image::RgbaImage) -> std::io::Result<Vec<u8>> {
+fn encode_jpeg(img: &image::RgbaImage) -> Result<Vec<u8>, image::ImageError> {
     use image::codecs::jpeg::JpegEncoder;
     let rgb = DynamicImage::ImageRgba8(img.clone()).into_rgb8();
     let mut buf = Vec::new();
     JpegEncoder::new_with_quality(&mut buf, FRAME_QUALITY)
-        .encode_image(&DynamicImage::ImageRgb8(rgb))
-        .map_err(|e| std::io::Error::other(e.to_string()))?;
+        .encode_image(&DynamicImage::ImageRgb8(rgb))?;
     Ok(buf)
 }
 
