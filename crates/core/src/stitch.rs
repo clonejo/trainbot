@@ -4,6 +4,7 @@ use thiserror::Error;
 use crate::fit::{fit_dx, FitDxError, FitMethod};
 use crate::gif::create_gif;
 use crate::metrics::record_fit_and_stitch_result;
+use crate::video::{self, create_video};
 use crate::{Config, Sequence, Train};
 
 #[derive(Debug, Error)]
@@ -26,6 +27,8 @@ pub(crate) enum FitAndStitchError {
     TooSlow { actual: f64, min: f64 },
     #[error("unable to assemble image: {0}")]
     UnableToAssembleImage(#[from] StitchError),
+    #[error("Could not generate video: {0}")]
+    Video(#[from] video::VideoError),
 }
 
 /// Composite `frames` into a panoramic RGBA image using the integer offsets `dx`.
@@ -189,6 +192,7 @@ pub(crate) fn fit_and_stitch(
         FitAndStitchError::from(e)
     })?;
     let gif_data = create_gif(&seq, &img);
+    let video_data = create_video(&seq)?;
     record_fit_and_stitch_result("success");
 
     Ok(Train {
@@ -201,6 +205,7 @@ pub(crate) fn fit_and_stitch(
         conf: config.clone(),
         image: img,
         gif_data,
+        video_data,
     })
 }
 

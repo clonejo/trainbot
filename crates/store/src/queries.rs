@@ -11,12 +11,16 @@ pub struct Train {
 }
 
 impl Train {
-    pub fn gif_file_name(&self) -> String {
-        format!("train_{}.gif", format_file_ts(&self.start_ts))
+    pub fn img_file_name(&self) -> String {
+        self.file_name("jpg")
     }
 
-    pub fn img_file_name(&self) -> String {
-        format!("train_{}.jpg", format_file_ts(&self.start_ts))
+    pub fn gif_file_name(&self) -> String {
+        self.file_name("gif")
+    }
+
+    pub fn file_name(&self, extension: &str) -> String {
+        format!("train_{}.{}", format_file_ts(&self.start_ts), extension)
     }
 }
 

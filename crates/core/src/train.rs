@@ -14,6 +14,7 @@ pub struct Train {
     pub conf: Config,
     pub image: RgbaImage,
     pub gif_data: Vec<u8>,
+    pub video_data: Vec<u8>,
 }
 
 impl Train {

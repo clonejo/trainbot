@@ -8,7 +8,7 @@ use rusqlite::Connection;
 use tracing::{info, warn};
 
 use store::{DataStore, queries};
-use trainbot_core::{AutoStitcher, Config, FitMethod, Train, init_logging, init_metrics};
+use trainbot_core::{AutoStitcher, Config, FitMethod, Train, init_logging, init_metrics, VIDEO_EXTENSION};
 use vid::{FourCC, FrameSource};
 
 use crate::args::DetectArgs;
@@ -188,10 +188,12 @@ fn save_train(train: &Train, ds: &DataStore, conn: &Connection) -> anyhow::Resul
     };
     let img_name = row.img_file_name();
     let gif_name = row.gif_file_name();
+    let video_name = row.file_name(VIDEO_EXTENSION);
 
     let img_path = ds.blob_path(&img_name);
     let thumb_path = ds.blob_thumb_path(&img_name);
     let gif_path = ds.blob_path(&gif_name);
+    let video_path = ds.blob_path(&video_name);
 
     // Resize to JPEG-safe dimensions
     let dyn_img = DynamicImage::ImageRgba8(train.image.clone());
@@ -207,6 +209,7 @@ fn save_train(train: &Train, ds: &DataStore, conn: &Connection) -> anyhow::Resul
     imutil::save_jpeg(&thumb_path, &thumb, 75).with_context(|| format!("save thumb {img_name}"))?;
 
     std::fs::write(&gif_path, &train.gif_data).with_context(|| format!("save gif {gif_name}"))?;
+    std::fs::write(&video_path, &train.video_data).with_context(|| format!("save video {video_name}"))?;
 
     let id = queries::insert_train(
         conn,
