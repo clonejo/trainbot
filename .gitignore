@@ -1,5 +1,6 @@
 /vids/
 /data/
+/data-*/
 /build/
 /prof-*.gz
 /env
