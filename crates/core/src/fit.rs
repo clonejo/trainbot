@@ -3,7 +3,7 @@ use thiserror::Error;
 use crate::sequence::Sequence;
 
 #[derive(Debug, Error)]
-pub(crate) enum FitLinearRobustError {
+pub enum FitLinearRobustError {
     #[error("fit failed: too few inliers {found} < {min}")]
     TooFewInliers { found: usize, min: usize },
     #[error("OLS on inliers failed")]
@@ -11,7 +11,7 @@ pub(crate) enum FitLinearRobustError {
 }
 
 #[derive(Debug, Error)]
-pub(crate) enum FitDxError {
+pub enum FitDxError {
     #[error("sequence too short for fitting: {n} < 9")]
     TooShort { n: usize },
     #[error(transparent)]

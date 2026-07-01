@@ -1,10 +1,9 @@
 use image::RgbaImage;
 use std::time::SystemTime;
-use tracing::trace;
 
 use crate::fit::FitMethod;
 use crate::metrics::{record_brightness, record_frame_disposition, record_sequence_length};
-use crate::stitch::fit_and_stitch;
+use crate::stitch::{fit_and_stitch, FitAndStitchError};
 use crate::{Config, Sequence, Train};
 
 const GOOD_COS_SCORE_NO_MOVE: f64 = 0.99;
@@ -79,28 +78,37 @@ impl AutoStitcher {
     }
 
     /// Attempt to stitch any buffered sequence and reset state.
-    pub fn try_stitch_and_reset(&mut self) -> Option<Train> {
+    pub fn try_stitch_and_reset(&mut self) -> Result<Option<Train>, AutoStitcherError> {
+        let _guard = scopeguard::guard((), |_| {
+            record_sequence_length(0);
+        });
+
+        // mem::replace to avoid 'cannot move out of self' error:
         let seq = std::mem::replace(&mut self.seq, Sequence::new());
         self.dx_abs_low_pass = 0.0;
 
         if seq.is_empty() {
-            return None;
+            return Ok(None);
         }
 
-        let result = fit_and_stitch(seq, &self.config, self.fit_method)
-            .map_err(|e| tracing::warn!("rejected sequence: {e}"))
-            .ok();
+        let result = fit_and_stitch(seq, &self.config, self.fit_method)?;
         record_sequence_length(0);
-        result
+        Ok(Some(result))
     }
 
     /// Core per-frame logic (called with the current frame and previous state).
-    fn process_frame(&mut self, frame: &RgbaImage, ts: SystemTime) -> Option<Train> {
-        let prev_ts = self.prev_ts?;
+    fn process_frame(
+        &mut self,
+        frame: &RgbaImage,
+        ts: SystemTime,
+    ) -> Result<Option<Train>, AutoStitcherError> {
+        let Some(prev_ts) = self.prev_ts else {
+            return Ok(None);
+        };
 
         let frame_period_s = ts.duration_since(prev_ts).unwrap_or_default().as_secs_f64();
         if frame_period_s < MIN_FRAME_PERIOD_S {
-            return None;
+            return Ok(None);
         }
 
         let min_dx = self.config.min_px_per_frame(frame_period_s);
@@ -113,7 +121,7 @@ impl AutoStitcher {
                 max_dx * 3
             );
             record_frame_disposition("slow_frame");
-            return None;
+            return Ok(None);
         }
 
         let is_active = !self.seq.is_empty();
@@ -132,7 +140,7 @@ impl AutoStitcher {
                     return self.try_stitch_and_reset();
                 }
             }
-            return None;
+            return Ok(None);
         }
 
         // Compute offset before any mutation of self (borrow-checker scope).
@@ -157,13 +165,13 @@ impl AutoStitcher {
 
             self.record(prev_ts, frame.clone(), dx, ts);
             record_frame_disposition("recorded");
-            return None;
+            return Ok(None);
         }
 
         // Not yet in a sequence.
         if cos >= GOOD_COS_SCORE_NO_MOVE && dx.unsigned_abs() < min_dx as u32 {
             record_frame_disposition("not_moving");
-            return None;
+            return Ok(None);
         }
 
         if cos >= GOOD_COS_SCORE_MOVE
@@ -174,22 +182,44 @@ impl AutoStitcher {
             self.record(prev_ts, frame.clone(), dx, ts);
             self.dx_abs_low_pass = dx.unsigned_abs() as f64;
             record_frame_disposition("recorded_new_sequence");
-            return None;
+            return Ok(None);
         }
 
         tracing::debug!(cos, dx, min_dx, max_dx, "inconclusive frame");
         record_frame_disposition("inconclusive");
-        None
+        Ok(None)
     }
 
     /// Submit a frame.  Returns a `Train` if a complete sequence just finished.
     ///
     /// Always updates the previous-frame state (even on early return), matching
     /// Go's deferred assignment.
-    pub fn frame(&mut self, frame: RgbaImage, ts: SystemTime) -> Option<Train> {
+    pub fn frame(
+        &mut self,
+        frame: RgbaImage,
+        ts: SystemTime,
+    ) -> Result<Option<Train>, AutoStitcherError> {
         let result = self.process_frame(&frame, ts);
         self.prev_ts = Some(ts);
         self.prev_frame = Some(frame);
         result
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum AutoStitcherError {
+    #[error("rejected sequence: {0}")]
+    FitAndStitchError(#[from] FitAndStitchError),
+}
+impl AutoStitcherError {
+    pub fn video_data(&self) -> Option<&Vec<u8>> {
+        if let AutoStitcherError::FitAndStitchError(FitAndStitchError::UnableToFit {
+            video_data: Some(video_data),
+            ..
+        }) = self
+        {
+            return Some(video_data);
+        }
+        None
     }
 }

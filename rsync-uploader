@@ -9,6 +9,7 @@ while true; do
 		rsync -rt --info=NAME \
 			--timeout=10 \
 			"$datadir"/blobs \
+			"$datadir"/failed \
 			"$target"
 
 		# Upload db last, so frontend-rs only has to monitor the db file updating and can push new train to browsers without the image failing to load:
@@ -16,7 +17,7 @@ while true; do
 			--timeout=10 \
 			"$datadir"/db.sqlite3 \
 			"$target"
-		find "$datadir/blobs" -type f -mtime +30 -delete
+		find "$datadir/blobs" "$datadir/failed" -type f -mtime +30 -delete
 	} || true
 	inotifywait --event=modify --timeout 3600 "$datadir"/db.sqlite3
 done

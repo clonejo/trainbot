@@ -1,14 +1,17 @@
 use std::time::{Duration, SystemTime};
 
 use anyhow::Context;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, Utc};
 use clap::Parser;
 use image::DynamicImage;
 use rusqlite::Connection;
 use tracing::{info, warn};
 
 use store::{DataStore, queries};
-use trainbot_core::{AutoStitcher, Config, FitMethod, Train, init_logging, init_metrics, VIDEO_EXTENSION};
+use trainbot_core::{
+    AutoStitcher, AutoStitcherError, Config, FitMethod, Train, VIDEO_EXTENSION, init_logging,
+    init_metrics,
+};
 use vid::{FourCC, FrameSource};
 
 use crate::args::DetectArgs;
@@ -46,8 +49,7 @@ pub fn run(argv: Vec<String>) {
     }
 
     let ds = DataStore::new(&args.data_dir);
-    let blobs_dir = ds.data_dir.join("blobs");
-    std::fs::create_dir_all(&blobs_dir).expect("create blobs dir");
+    ds.create_dirs().expect("create blobs/failed dirs");
 
     let conn = store::open(ds.db_path()).expect("open DB");
 
@@ -70,6 +72,7 @@ pub fn run(argv: Vec<String>) {
     let is_picam3 = args.input == "picam3";
     let crop = (!is_picam3).then_some((args.rect_x, args.rect_y, args.rect_w, args.rect_h));
 
+    // TODO: convert to enum
     let fit_method = match args.fit_method.as_str() {
         "ols" => FitMethod::Ols,
         "ransac" => FitMethod::Ransac,
@@ -107,8 +110,9 @@ pub fn run(argv: Vec<String>) {
                 } else {
                     frame.image
                 };
-                if let Some(train) = stitcher.frame(img, frame.ts)
-                    && let Err(e) = save_train(&train, &ds, &conn)
+                if let Ok(Some(train)) = stitcher.frame(img, frame.ts).inspect_err(|err| {
+                    save_failed_video(err, &ds);
+                }) && let Err(e) = save_train(&train, &ds, &conn)
                 {
                     tracing::error!(err = %e, "failed to save train");
                 }
@@ -124,8 +128,9 @@ pub fn run(argv: Vec<String>) {
         }
     }
 
-    if let Some(train) = stitcher.try_stitch_and_reset()
-        && let Err(e) = save_train(&train, &ds, &conn)
+    if let Ok(Some(train)) = stitcher.try_stitch_and_reset().inspect_err(|err| {
+        save_failed_video(err, &ds);
+    }) && let Err(e) = save_train(&train, &ds, &conn)
     {
         tracing::error!(err = %e, "failed to save final train");
     }
@@ -209,7 +214,8 @@ fn save_train(train: &Train, ds: &DataStore, conn: &Connection) -> anyhow::Resul
     imutil::save_jpeg(&thumb_path, &thumb, 75).with_context(|| format!("save thumb {img_name}"))?;
 
     std::fs::write(&gif_path, &train.gif_data).with_context(|| format!("save gif {gif_name}"))?;
-    std::fs::write(&video_path, &train.video_data).with_context(|| format!("save video {video_name}"))?;
+    std::fs::write(&video_path, &train.video_data)
+        .with_context(|| format!("save video {video_name}"))?;
 
     let id = queries::insert_train(
         conn,
@@ -232,4 +238,16 @@ fn save_train(train: &Train, ds: &DataStore, conn: &Connection) -> anyhow::Resul
     );
 
     Ok(())
+}
+
+fn save_failed_video(err: &AutoStitcherError, ds: &DataStore) {
+    let Some(video_data) = err.video_data() else {
+        return;
+    };
+    let now = Local::now();
+    let path = ds.failed_path(now.into(), VIDEO_EXTENSION);
+    match std::fs::write(&path, video_data) {
+        Ok(_) => info!(%path, "Stored stitching failure video."),
+        Err(err) => warn!(%err, %path, "Could not write stitching failure video."),
+    }
 }

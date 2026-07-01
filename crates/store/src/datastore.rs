@@ -1,7 +1,11 @@
 use camino::{Utf8Path, Utf8PathBuf};
+use chrono::{DateTime, FixedOffset};
+
+use crate::ts::format_file_ts;
 
 const DB_FILE: &str = "db.sqlite3";
 const BLOBS_DIR: &str = "blobs";
+const FAILED_DIR: &str = "failed";
 
 #[derive(Debug, Clone)]
 pub struct DataStore {
@@ -25,6 +29,20 @@ impl DataStore {
 
     pub fn blob_thumb_path(&self, name: &str) -> Utf8PathBuf {
         self.blob_path(thumb_name(name))
+    }
+
+    pub fn failed_path(&self, time: DateTime<FixedOffset>, extension: &str) -> Utf8PathBuf {
+        self.data_dir.join(FAILED_DIR).join(format!(
+            "failed_{}.{}",
+            format_file_ts(&time),
+            extension
+        ))
+    }
+
+    pub fn create_dirs(&self) -> std::io::Result<()> {
+        std::fs::create_dir_all(self.data_dir.join(BLOBS_DIR))?;
+        std::fs::create_dir_all(self.data_dir.join(FAILED_DIR))?;
+        Ok(())
     }
 }
 

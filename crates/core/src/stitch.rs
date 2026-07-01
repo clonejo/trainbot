@@ -8,7 +8,7 @@ use crate::video::{self, create_video};
 use crate::{Config, Sequence, Train};
 
 #[derive(Debug, Error)]
-pub(crate) enum StitchError {
+pub enum StitchError {
     #[error("sequence too short to stitch")]
     TooShort,
     #[error("dx elements do not have consistent sign")]
@@ -18,9 +18,12 @@ pub(crate) enum StitchError {
 }
 
 #[derive(Debug, Error)]
-pub(crate) enum FitAndStitchError {
-    #[error("unable to fit: {0}")]
-    UnableToFit(#[from] FitDxError),
+pub enum FitAndStitchError {
+    #[error("unable to fit: {fit_dx_error}")]
+    UnableToFit {
+        fit_dx_error: FitDxError,
+        video_data: Option<Vec<u8>>,
+    },
     #[error("too short: {actual:.1} < {min:.1}")]
     TooShort { actual: f64, min: f64 },
     #[error("too slow: {actual:.1} < {min:.1}")]
@@ -156,9 +159,13 @@ pub(crate) fn fit_and_stitch(
     }
     // max_px_per_frame(1) = max pixels/frame at 1 fps = max speed in px/s.
     let max_speed_px_s = config.max_px_per_frame(1.0) as f64;
-    let (dx_fit, ds, v0, a) = fit_dx(&seq, max_speed_px_s, method).map_err(|e| {
+    let (dx_fit, ds, v0, a) = fit_dx(&seq, max_speed_px_s, method).map_err(|fit_dx_error| {
         record_fit_and_stitch_result("unable_to_fit");
-        FitAndStitchError::from(e)
+        let video_data = create_video(&seq).ok();
+        FitAndStitchError::UnableToFit {
+            fit_dx_error,
+            video_data,
+        }
     })?;
 
     if ds < config.min_length_px() {

@@ -20,4 +20,4 @@ clap = { workspace = true }
 anyhow = { workspace = true }
 serde_json = { workspace = true }
 tracing = "0.1"
-camino-tempfile = { workspace = true }
+camino = { workspace = true }
