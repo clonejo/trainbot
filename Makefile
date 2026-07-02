@@ -145,7 +145,7 @@ run_videofile:
 
 # Usage: make deploy_trainbot host=$TRAINBOT_DEPLOY_TARGET_SSH_HOST
 # Example: make deploy_trainbot host=pi@10.20.0.12
-deploy_trainbot: docker_build
+deploy_trainbot: rust_build_arm64
 	test -n "$(host)" # missing target host, usage: make deploy_trainbot host=TRAINBOT_DEPLOY_TARGET_SSH_HOST !
 
 	ssh $(host) mkdir -p trainbot/
@@ -158,7 +158,7 @@ deploy_trainbot: docker_build
 	ssh $(host) systemctl --user stop trainbot-rsync-uploader.service
 
 	#ssh $(host) sudo apt-get install -y inotify-tools
-	rsync build/trainbot-arm64 $(host):trainbot/
+	rsync target/aarch64-unknown-linux-musl/release/trainbot $(host):trainbot/trainbot-arm64
 	rsync ./rsync-uploader $(host):trainbot/
 
 	ssh $(host) loginctl enable-linger
