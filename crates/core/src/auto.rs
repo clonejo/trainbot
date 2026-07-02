@@ -149,7 +149,7 @@ impl AutoStitcher {
             Self::find_offset(prev, frame, max_dx)
         };
 
-        tracing::debug!(dx, cos, is_active, "frame offset");
+        trace!(dx, cos, is_active, "frame offset");
 
         if is_active {
             self.dx_abs_low_pass = self.dx_abs_low_pass * DX_LOW_PASS_FACTOR
@@ -185,7 +185,7 @@ impl AutoStitcher {
             return Ok(None);
         }
 
-        tracing::debug!(cos, dx, min_dx, max_dx, "inconclusive frame");
+        trace!(cos, dx, min_dx, max_dx, "inconclusive frame");
         record_frame_disposition("inconclusive");
         Ok(None)
     }
