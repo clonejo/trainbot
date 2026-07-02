@@ -89,6 +89,7 @@ pub fn run(argv: Vec<String>) {
         min_length_m: args.min_len_m,
         max_frame_count_per_seq: args.max_frame_count_per_seq,
         mask,
+        video_encoder: args.video_encoder,
     };
 
     tracing::info!(input = %args.input, data_dir = %args.data_dir, "starting");

@@ -163,7 +163,7 @@ pub(crate) fn fit_and_stitch(
         record_fit_and_stitch_result("unable_to_fit");
         let video_data = match fit_dx_error {
             FitDxError::TooShort { .. } => None,
-            _ => create_video(&seq).ok(),
+            _ => create_video(&seq, config.video_encoder).ok(),
         };
         FitAndStitchError::UnableToFit {
             fit_dx_error,
@@ -202,7 +202,7 @@ pub(crate) fn fit_and_stitch(
         FitAndStitchError::from(e)
     })?;
     let gif_data = create_gif(&seq, &img);
-    let video_data = create_video(&seq)?;
+    let video_data = create_video(&seq, config.video_encoder)?;
     record_fit_and_stitch_result("success");
 
     Ok(Train {

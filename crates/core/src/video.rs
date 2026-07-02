@@ -1,7 +1,9 @@
+use std::ffi::OsString;
 use std::io::{pipe, Write};
 use std::time::SystemTimeError;
 
 use bytes::{BufMut, Bytes, BytesMut};
+use clap::ValueEnum;
 use duct::cmd;
 use mkv_element::io::blocking_impl::*;
 use mkv_element::prelude::*;
@@ -16,15 +18,13 @@ pub const EXTENSION: &str = "mp4";
 /// To avoid dynamic library dependencies, we want to pipe to the ffmpeg binary. However, there is
 /// no easy way to stream raw frames and PTS (per-frame timestamps for variable framerate) to
 /// ffmpeg. That's why we generate an mkv stream to pass to ffmpeg.
-pub(crate) fn create_video(seq: &Sequence) -> Result<Vec<u8>, VideoError> {
+pub(crate) fn create_video(seq: &Sequence, encoder: Encoder) -> Result<Vec<u8>, VideoError> {
     let first_ts = *seq.ts.first().ok_or(VideoError::FramesEmpty)?;
     let first_frame = seq.frames.first().ok_or(VideoError::FramesEmpty)?;
 
-    // TODO: Your 700 height isn't macroblock-aligned (16×44 = 704), and hardware encoders
-    // generally need 16-alignment — width 400 is fine (25×16) but height likely isn't. Expect
-    // to pad to 704 and set a crop/display rectangle so the output still presents as 700.
-    // Test this early; it's the most common surprise on odd resolutions.
-    //  (pad to 704 if the downstream hardware encoder needs 16-alignment, and use PixelCrop* to trim back)
+    // libsvtav1 is terribly slow on a raspi 4, no chance.
+    // h264_v4l2m2m encoded my 400x700 video at 1.5x realtime speed
+    //let encoder: String = encoder.into();
 
     let (reader, mut writer) = pipe()?;
     #[rustfmt::skip]
@@ -34,10 +34,9 @@ pub(crate) fn create_video(seq: &Sequence) -> Result<Vec<u8>, VideoError> {
         "-i", "-",
         "-f", "ismv", // MP4 errors out with "muxer does not support non seekable output"
         "-fps_mode", "passthrough",
-        "-c:v", "libx264", // raspi: h264_v4l2m2m
+        "-c:v", encoder.to_osstring(),
         "-b:v", "2048k",
         // TODO: -b:v BITRATE ? constant quality supported by raspi hw encoder?
-        // TODO: try av1 software encoding on raspi
         "-"
     )
     .stdin_file(reader)
@@ -119,6 +118,35 @@ pub(crate) fn create_video(seq: &Sequence) -> Result<Vec<u8>, VideoError> {
     let encoded = ffmpeg.into_output()?.stdout;
     debug!(bytes = encoded.len(), "got encoded bytes from ffmpeg");
     Ok(encoded)
+}
+
+#[derive(ValueEnum, Clone, Copy, Debug, Default)]
+pub enum Encoder {
+    #[value(name = "libx264")]
+    #[default]
+    Libx264,
+    #[value(name = "h264_v4l2m2m")]
+    H264V4l2m2m,
+}
+impl std::fmt::Display for Encoder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.to_possible_value()
+                .expect("value(skip) not used")
+                .get_name()
+        )
+    }
+}
+impl Encoder {
+    pub fn to_osstring(self) -> OsString {
+        OsString::from(
+            self.to_possible_value()
+                .expect("value(skip) not used")
+                .get_name(),
+        )
+    }
 }
 
 #[derive(Debug, thiserror::Error)]

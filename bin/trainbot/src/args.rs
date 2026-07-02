@@ -1,5 +1,7 @@
 use clap::Parser;
 
+use trainbot_core::VideoEncoder;
+
 #[derive(Parser, Debug)]
 #[command(name = "trainbot", about = "Automatic train sighting detector")]
 pub struct DetectArgs {
@@ -108,6 +110,13 @@ pub struct DetectArgs {
         help = "When stitching, only take pixels from the white areas in the mask."
     )]
     pub mask: Option<String>,
+
+    #[arg(
+        long,
+        default_value_t,
+        help = "Which ffmpeg encoder to use for videos. Use h264_v4l2m2m on the raspi 4, and libx264 when your CPU is fast enough."
+    )]
+    pub video_encoder: VideoEncoder,
 
     // Camera opts
     #[arg(

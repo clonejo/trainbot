@@ -1,5 +1,7 @@
 use image::RgbaImage;
 
+use crate::video::Encoder;
+
 #[derive(Clone)]
 pub struct Config {
     pub pixels_per_m: f64,
@@ -8,6 +10,7 @@ pub struct Config {
     pub min_length_m: f64,
     pub max_frame_count_per_seq: usize,
     pub mask: Option<RgbaImage>,
+    pub video_encoder: Encoder,
 }
 
 impl Config {
