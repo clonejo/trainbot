@@ -161,7 +161,10 @@ pub(crate) fn fit_and_stitch(
     let max_speed_px_s = config.max_px_per_frame(1.0) as f64;
     let (dx_fit, ds, v0, a) = fit_dx(&seq, max_speed_px_s, method).map_err(|fit_dx_error| {
         record_fit_and_stitch_result("unable_to_fit");
-        let video_data = create_video(&seq).ok();
+        let video_data = match fit_dx_error {
+            FitDxError::TooShort { .. } => None,
+            _ => create_video(&seq).ok(),
+        };
         FitAndStitchError::UnableToFit {
             fit_dx_error,
             video_data,
