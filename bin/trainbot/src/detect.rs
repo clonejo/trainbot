@@ -111,6 +111,7 @@ pub fn run(argv: Vec<String>) {
                     frame.image
                 };
                 if let Ok(Some(train)) = stitcher.frame(img, frame.ts).inspect_err(|err| {
+                    warn!(%err, "Failed to fit and stitch");
                     save_failed_video(err, &ds);
                 }) && let Err(e) = save_train(&train, &ds, &conn)
                 {
@@ -129,6 +130,7 @@ pub fn run(argv: Vec<String>) {
     }
 
     if let Ok(Some(train)) = stitcher.try_stitch_and_reset().inspect_err(|err| {
+        warn!(%err, "Failed to fit and stitch");
         save_failed_video(err, &ds);
     }) && let Err(e) = save_train(&train, &ds, &conn)
     {
