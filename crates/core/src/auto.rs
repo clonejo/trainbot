@@ -2,7 +2,7 @@ use image::RgbaImage;
 use std::time::SystemTime;
 
 use crate::fit::FitMethod;
-use crate::metrics::{record_brightness, record_frame_disposition, record_sequence_length};
+use crate::metrics::{record_brightness, record_sequence_length, FrameDispositionGuard};
 use crate::stitch::{fit_and_stitch, FitAndStitchError};
 use crate::{Config, Sequence, Train};
 
@@ -97,6 +97,8 @@ impl AutoStitcher {
     }
 
     /// Core per-frame logic (called with the current frame and previous state).
+    ///
+    /// Returns a `Train` if a sequence ended with this frame.
     fn process_frame(
         &mut self,
         frame: &RgbaImage,
@@ -106,8 +108,11 @@ impl AutoStitcher {
             return Ok(None);
         };
 
+        let mut frame_disposition_guard = FrameDispositionGuard::new();
+
         let frame_period_s = ts.duration_since(prev_ts).unwrap_or_default().as_secs_f64();
         if frame_period_s < MIN_FRAME_PERIOD_S {
+            frame_disposition_guard.disposition = "fast_frame";
             return Ok(None);
         }
 
@@ -120,7 +125,7 @@ impl AutoStitcher {
                 frame.width(),
                 max_dx * 3
             );
-            record_frame_disposition("slow_frame");
+            frame_disposition_guard.disposition = "slow_frame";
             return Ok(None);
         }
 
@@ -132,7 +137,7 @@ impl AutoStitcher {
         record_brightness(avg_mean, avg_dev_mean);
 
         if avg_dev_mean < MIN_CONTRAST_AVG_DEV {
-            record_frame_disposition("low_contrast");
+            frame_disposition_guard.disposition = "low_contrast";
             if is_active {
                 let last_ts = *self.seq.ts.last().unwrap();
                 let elapsed = ts.duration_since(last_ts).unwrap_or_default().as_secs_f64();
@@ -164,13 +169,13 @@ impl AutoStitcher {
             }
 
             self.record(prev_ts, frame.clone(), dx, ts);
-            record_frame_disposition("recorded");
+            frame_disposition_guard.disposition = "recorded";
             return Ok(None);
         }
 
         // Not yet in a sequence.
         if cos >= GOOD_COS_SCORE_NO_MOVE && dx.unsigned_abs() < min_dx as u32 {
-            record_frame_disposition("not_moving");
+            frame_disposition_guard.disposition = "not_moving";
             return Ok(None);
         }
 
@@ -181,12 +186,12 @@ impl AutoStitcher {
             tracing::info!("start of new sequence");
             self.record(prev_ts, frame.clone(), dx, ts);
             self.dx_abs_low_pass = dx.unsigned_abs() as f64;
-            record_frame_disposition("recorded_new_sequence");
+            frame_disposition_guard.disposition = "recorded_new_sequence";
             return Ok(None);
         }
 
         trace!(cos, dx, min_dx, max_dx, "inconclusive frame");
-        record_frame_disposition("inconclusive");
+        frame_disposition_guard.disposition = "inconclusive";
         Ok(None)
     }
 

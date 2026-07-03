@@ -62,7 +62,22 @@ pub fn init_metrics(addr: &str) {
     });
 }
 
-pub fn record_frame_disposition(disposition: &'static str) {
+pub struct FrameDispositionGuard {
+    pub disposition: &'static str,
+}
+impl FrameDispositionGuard {
+    pub(crate) fn new() -> Self {
+        Self {
+            disposition: "unknown",
+        }
+    }
+}
+impl Drop for FrameDispositionGuard {
+    fn drop(&mut self) {
+        record_frame_disposition(self.disposition);
+    }
+}
+fn record_frame_disposition(disposition: &'static str) {
     metrics::counter!("trainbot_frame_dispositions_total", "disposition" => disposition)
         .increment(1);
 }
