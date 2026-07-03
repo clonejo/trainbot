@@ -110,7 +110,6 @@ impl PiCam3Src {
         }
 
         let reader = duct::cmd("rpicam-vid", &args)
-            .stderr_null()
             .reader()
             .map_err(Error::ProcessSpawn)?;
 
