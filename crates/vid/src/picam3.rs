@@ -4,9 +4,28 @@ use image::RgbaImage;
 use std::io::{self, BufReader, Read};
 use std::time::SystemTime;
 
+//  pi@raspberrypi:~ $ rpicam-hello --list
+//  Available cameras
+//  -----------------
+//  0 : imx708 [4608x2592] (/base/soc/i2c0mux/i2c@1/imx708@1a)
+//      Modes: 'SRGGB10_CSI2P' : 1536x864 [120.13 fps - (768, 432)/3072x1728 crop]
+//                               2304x1296 [56.03 fps - (0, 0)/4608x2592 crop]
+//                               4608x2592 [14.35 fps - (0, 0)/4608x2592 crop]
+
+//  Raspberry Pi HQ camera:
+//
+//  0 : imx477 [4056x3040 12-bit RGGB] (/base/soc/i2c0mux/i2c@1/imx477@1a)
+//      Modes: 'SRGGB10_CSI2P' : 1332x990 [120.05 fps - (696, 528)/2664x1980 crop]
+//             'SRGGB12_CSI2P' : 2028x1080 [50.03 fps - (0, 440)/4056x2160 crop]
+//                               2028x1520 [40.01 fps - (0, 0)/4056x3040 crop]
+//                               4056x3040 [10.00 fps - (0, 0)/4056x3040 crop]
+
 /// Hardcoded sensor dimensions for the Raspberry Pi Camera Module v3.
-const SENSOR_W: u32 = 2304;
-const SENSOR_H: u32 = 1296;
+//const SENSOR_W: u32 = 2304;
+//const SENSOR_H: u32 = 1296;
+// TODO: make configurable / support picam3 + HQ camera
+const SENSOR_W: u32 = 1014;
+const SENSOR_H: u32 = 740;
 
 pub struct PiCam3Config {
     /// ROI within the sensor (defaults to full sensor if all-zero). (ROI = region of interest)
@@ -62,7 +81,8 @@ impl PiCam3Src {
             format!("--width={w}"),
             format!("--height={h}"),
             format!("--roi={roi}"),
-            format!("--mode={}:{}:12:P", SENSOR_W, SENSOR_H),
+            //format!("--mode={}:{}:12:P", SENSOR_W, SENSOR_H),
+            "--mode=2028:1520:12:P".into(), // FIXME: make mode configurable
             format!("--framerate={}", cfg.fps),
             "--autofocus-mode=manual".into(),
             format!("--lens-position={:.6}", cfg.focus),

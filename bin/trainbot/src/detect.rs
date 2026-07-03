@@ -156,7 +156,7 @@ fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn Fram
                 focus: 0.0,
                 rotate_180: args.rotate_180,
                 format: fourcc,
-                fps: 30,
+                fps: 40, // TODO: make configurable
             })
             .context("open PiCam3")?,
         ));
