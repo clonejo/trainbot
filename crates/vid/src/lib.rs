@@ -1,3 +1,4 @@
+mod buf;
 mod convert;
 mod fcc;
 mod ffprobe;
@@ -9,6 +10,7 @@ mod picam3;
 #[cfg(target_os = "linux")]
 mod cam;
 
+pub use buf::BufSrc;
 pub use fcc::FourCC;
 pub use file::FileSrc;
 pub use jpeg_scan::JpegScanner;

@@ -139,27 +139,27 @@ pub fn run(argv: Vec<String>) {
     }
 }
 
+const SRC_BUF_CAP: usize = 200;
+
 fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn FrameSource>> {
     if args.input.starts_with("http://") || args.input.starts_with("https://") {
-        return Ok(Box::new(
-            vid::MjpegHttpSrc::open(&args.input).context("open MjpegHttpSrc")?,
-        ));
+        let src = vid::MjpegHttpSrc::open(&args.input).context("open MjpegHttpSrc")?;
+        return Ok(Box::new(vid::BufSrc::new(src, SRC_BUF_CAP)));
     }
 
     if args.input == "picam3" {
-        return Ok(Box::new(
-            vid::PiCam3Src::open(vid::PiCam3Config {
-                roi_x: args.rect_x,
-                roi_y: args.rect_y,
-                width: args.rect_w,
-                height: args.rect_h,
-                focus: 0.0,
-                rotate_180: args.rotate_180,
-                format: fourcc,
-                fps: 40, // TODO: make configurable
-            })
-            .context("open PiCam3")?,
-        ));
+        let src = vid::PiCam3Src::open(vid::PiCam3Config {
+            roi_x: args.rect_x,
+            roi_y: args.rect_y,
+            width: args.rect_w,
+            height: args.rect_h,
+            focus: 0.0,
+            rotate_180: args.rotate_180,
+            format: fourcc,
+            fps: 40, // TODO: make configurable
+        })
+        .context("open PiCam3")?;
+        return Ok(Box::new(vid::BufSrc::new(src, SRC_BUF_CAP)));
     }
 
     #[cfg(target_os = "linux")]
@@ -168,15 +168,14 @@ fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn Fram
         if let Ok(meta) = std::fs::metadata(&args.input)
             && meta.file_type().is_char_device()
         {
-            return Ok(Box::new(
-                vid::CamSrc::open(vid::CamConfig {
-                    device: args.input.clone(),
-                    fourcc,
-                    width: args.camera_w,
-                    height: args.camera_h,
-                })
-                .context("open CamSrc")?,
-            ));
+            let src = vid::CamSrc::open(vid::CamConfig {
+                device: args.input.clone(),
+                fourcc,
+                width: args.camera_w,
+                height: args.camera_h,
+            })
+            .context("open CamSrc")?;
+            return Ok(Box::new(vid::BufSrc::new(src, SRC_BUF_CAP)));
         }
     }
 

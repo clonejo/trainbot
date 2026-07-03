@@ -2404,12 +2404,15 @@ name = "vid"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "crossbeam-channel",
  "duct",
  "image",
+ "metrics",
  "reqwest",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
+ "tracing",
  "v4l",
 ]
 
