@@ -1,4 +1,7 @@
-use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::{
+    fmt::{self, format::FmtSpan},
+    EnvFilter,
+};
 
 #[derive(Clone, Debug)]
 pub struct LogConfig {
@@ -29,8 +32,15 @@ pub fn init_logging(config: &LogConfig) {
     let filter = EnvFilter::try_new(level).unwrap_or_else(|_| EnvFilter::new("info"));
 
     if config.log_pretty {
-        let _ = fmt().with_env_filter(filter).try_init();
+        let _ = fmt::fmt()
+            .with_env_filter(filter)
+            .with_span_events(FmtSpan::CLOSE)
+            .try_init();
     } else {
-        let _ = fmt().json().with_env_filter(filter).try_init();
+        let _ = fmt::fmt()
+            .json()
+            .with_env_filter(filter)
+            .with_span_events(FmtSpan::CLOSE)
+            .try_init();
     }
 }

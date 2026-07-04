@@ -42,3 +42,22 @@ impl Config {
         self.min_length_m * self.pixels_per_m
     }
 }
+
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mask = self
+            .mask
+            .as_ref()
+            .map(|mask| format!("RgbaImage ({}x{})", mask.width(), mask.height()))
+            .unwrap_or_default();
+        f.debug_struct("Config")
+            .field("pixels_per_m", &self.pixels_per_m)
+            .field("min_speed_kph", &self.min_speed_kph)
+            .field("max_speed_kph", &self.max_speed_kph)
+            .field("min_length_m", &self.min_length_m)
+            .field("max_frame_count_per_seq", &self.max_frame_count_per_seq)
+            .field("mask", &mask)
+            .field("video_encoder", &self.video_encoder)
+            .finish()
+    }
+}

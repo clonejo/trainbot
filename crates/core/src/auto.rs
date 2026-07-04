@@ -1,5 +1,6 @@
 use image::RgbaImage;
 use std::time::SystemTime;
+use tracing::{instrument, trace};
 
 use crate::fit::FitMethod;
 use crate::metrics::{record_brightness, record_sequence_length, FrameDispositionGuard};
@@ -99,6 +100,7 @@ impl AutoStitcher {
     /// Core per-frame logic (called with the current frame and previous state).
     ///
     /// Returns a `Train` if a sequence ended with this frame.
+    #[instrument(level = "trace", skip(frame))]
     fn process_frame(
         &mut self,
         frame: &RgbaImage,
@@ -226,5 +228,23 @@ impl AutoStitcherError {
             return Some(video_data);
         }
         None
+    }
+}
+
+impl std::fmt::Debug for AutoStitcher {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let prev_frame = self
+            .prev_frame
+            .as_ref()
+            .map(|mask| format!("RgbaImage ({}x{})", mask.width(), mask.height()))
+            .unwrap_or_default();
+        f.debug_struct("AutoStitcher")
+            .field("config", &self.config)
+            .field("fit_method", &self.fit_method)
+            .field("prev_ts", &self.prev_ts)
+            .field("prev_frame", &prev_frame)
+            .field("seq", &self.seq)
+            .field("dx_abs_low_pass", &self.dx_abs_low_pass)
+            .finish()
     }
 }

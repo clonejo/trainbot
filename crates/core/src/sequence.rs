@@ -27,3 +27,14 @@ impl Sequence {
         self.dx.len()
     }
 }
+
+impl std::fmt::Debug for Sequence {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Sequence")
+            .field("start_ts", &self.start_ts)
+            .field("frames", &format_args!("[{} elements]", self.frames.len()))
+            .field("dx", &format_args!("[{} elements]", self.dx.len()))
+            .field("ts", &format_args!("[{} elements]", self.ts.len()))
+            .finish()
+    }
+}
