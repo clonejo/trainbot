@@ -22,12 +22,15 @@ impl BufSrc {
                 match tx.try_send(item) {
                     Ok(()) => {
                         dropped_in_a_row = 0;
+                        record_frame_buffered("buffered");
+                        record_source_queue_length(tx.len());
                     }
                     Err(TrySendError::Full(_)) => {
                         dropped_in_a_row += 1;
                         if dropped_in_a_row % 60 == 1 {
                             tracing::warn!(dropped_in_a_row, "frame buffer full, dropping frame");
                         }
+                        record_frame_buffered("dropped");
                     }
                     Err(TrySendError::Disconnected(_)) => break,
                 }
@@ -47,7 +50,7 @@ impl BufSrc {
 impl FrameSource for BufSrc {
     fn next_frame(&mut self) -> Result<Option<Frame>> {
         let frame = self.rx.recv().unwrap_or(Ok(None));
-        metrics::gauge!("trainbot_source_queue_length").set(self.rx.len() as f64);
+        record_source_queue_length(self.rx.len());
         frame
     }
 
@@ -58,4 +61,12 @@ impl FrameSource for BufSrc {
     fn is_live(&self) -> bool {
         true
     }
+}
+
+// prometheus metrics
+fn record_frame_buffered(buffered: &'static str) {
+    metrics::counter!("trainbot_frame_buffered_total", "buffered" => buffered).increment(1);
+}
+fn record_source_queue_length(len: usize) {
+    metrics::gauge!("trainbot_source_queue_length").set(len as f64);
 }

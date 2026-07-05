@@ -86,10 +86,6 @@ pub fn record_sequence_length(n: usize) {
     metrics::gauge!("trainbot_sequence_length").set(n as f64);
 }
 
-pub fn record_source_queue_length(n: usize) {
-    metrics::gauge!("trainbot_source_queue_length").set(n as f64);
-}
-
 pub fn record_fit_and_stitch_result(result: &'static str) {
     metrics::counter!("trainbot_fit_and_stitch_results_total", "result" => result).increment(1);
 }
