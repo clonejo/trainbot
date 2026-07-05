@@ -1,3 +1,4 @@
+use clap::ValueEnum;
 use thiserror::Error;
 
 use crate::sequence::Sequence;
@@ -21,7 +22,8 @@ pub enum FitDxError {
 }
 
 /// Which robust fitting algorithm `fit_dx` uses.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, ValueEnum)]
+#[value(rename_all = "lower")]
 pub enum FitMethod {
     /// Deterministic iterative OLS with median-seeded outlier rejection.
     /// Matches Go within the standard test tolerances for all set0 videos.
@@ -34,16 +36,6 @@ pub enum FitMethod {
     /// slightly different inlier sets.  For the snow video this causes a ~0.12 m/s
     /// speed difference vs Go's output, which is outside the ±0.1 m/s test tolerance.
     Ransac,
-}
-
-fn sign(x: f64) -> f64 {
-    if x > 0.0 {
-        1.0
-    } else if x < 0.0 {
-        -1.0
-    } else {
-        0.0
-    }
 }
 
 /// Ordinary least squares for the linear model v(t) = v0 + a*t.
@@ -198,7 +190,7 @@ pub(crate) fn fit_dx(
         round_err += dx_f - dx_round;
         if round_err.abs() >= 0.5 {
             dx_round += round_err;
-            round_err -= sign(round_err);
+            round_err -= round_err.signum();
         }
         dx_fit[i] = dx_round as i32;
     }

@@ -9,8 +9,7 @@ use tracing::{info, warn};
 
 use store::{DataStore, queries};
 use trainbot_core::{
-    AutoStitcher, AutoStitcherError, Config, FitMethod, Train, VIDEO_EXTENSION, init_logging,
-    init_metrics,
+    AutoStitcher, AutoStitcherError, Config, Train, VIDEO_EXTENSION, init_logging, init_metrics,
 };
 use vid::{FourCC, FrameSource};
 
@@ -72,16 +71,6 @@ pub fn run(argv: Vec<String>) {
     let is_picam3 = args.input == "picam3";
     let crop = (!is_picam3).then_some((args.rect_x, args.rect_y, args.rect_w, args.rect_h));
 
-    // TODO: convert to enum
-    let fit_method = match args.fit_method.as_str() {
-        "ols" => FitMethod::Ols,
-        "ransac" => FitMethod::Ransac,
-        other => {
-            eprintln!("error: unknown --fit-method {other:?} (expected ols|ransac)");
-            std::process::exit(2);
-        }
-    };
-
     let config = Config {
         pixels_per_m: args.px_per_m,
         min_speed_kph: args.min_speed_kph,
@@ -94,7 +83,7 @@ pub fn run(argv: Vec<String>) {
 
     tracing::info!(input = %args.input, data_dir = %args.data_dir, "starting");
 
-    let mut stitcher = AutoStitcher::new(config, fit_method);
+    let mut stitcher = AutoStitcher::new(config, args.fit_method);
     let mut failed_frames: usize = 0;
 
     let mut next_frame_ts = SystemTime::now();

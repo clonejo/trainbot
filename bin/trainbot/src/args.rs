@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use trainbot_core::VideoEncoder;
+use trainbot_core::{FitMethod, VideoEncoder};
 
 #[derive(Parser, Debug)]
 #[command(name = "trainbot", about = "Automatic train sighting detector")]
@@ -213,7 +213,7 @@ pub struct DetectArgs {
         value_name = "METHOD",
         help = "RANSAC fit method: ols|ransac"
     )]
-    pub fit_method: String,
+    pub fit_method: FitMethod,
 }
 
 #[derive(Parser, Debug)]
