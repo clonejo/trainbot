@@ -3,6 +3,7 @@
 /data-*/
 /build/
 /prof-*.gz
+/profile-*.json*
 /env
 /.direnv
 

@@ -3,6 +3,7 @@ use crossbeam_channel::{Receiver, TrySendError, bounded};
 use crate::{Frame, FrameSource, Result};
 
 /// Allow taking in frames at a constant rate, while processing is variable.
+/// An added benefit is moving JPEG decode into a separate thread.
 pub struct BufSrc {
     fps: f64,
     rx: Receiver<Result<Option<Frame>>>,

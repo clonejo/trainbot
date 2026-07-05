@@ -3,6 +3,7 @@ use rayon::prelude::*;
 
 /// cos² of the cosine similarity between the patch at `(ox, oy)` in `img` and `pat`.
 /// All arithmetic is integer until the final division — matches the Go/C kernel exactly.
+/// Hottest function in trainbot.
 fn compute_cos2(
     img: &[u8],
     img_stride: usize,

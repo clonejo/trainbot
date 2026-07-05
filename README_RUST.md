@@ -37,3 +37,10 @@ rustup target add aarch64-unknown-linux-musl
 paru -S aarch64-linux-musl-cross # (AUR)
 cargo build --release --target aarch64-unknown-linux-musl -p trainbot
 ```
+
+## Performance testing
+
+- install [samply](https://github.com/mstange/samply)
+- `cargo build --release`
+- `samply record target/release/trainbot -i internal/pkg/stitch/testdata/set0/day.mp4`
+- on raspi: `samply record --save-only -p $(pgrep trainbot) --unstable-presymbolicate`. Copy `.json.gz` and `.json.syms.json` to your computer and `samply load ….json.gz`

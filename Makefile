@@ -181,5 +181,8 @@ rust_check:
 rust_build_arm64:
 	CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc cargo build --release --target=aarch64-unknown-linux-musl
 
+rust_perf:
+	samply record target/release/trainbot --input internal/pkg/stitch/testdata/set0/day.mp4 -X 0 -Y 0 -W 300 -H 300
+
 list:
 	@LC_ALL=C $(MAKE) -pRrq -f $(firstword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/(^|\n)# Files(\n|$$)/,/(^|\n)# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | grep -E -v -e '^[^[:alnum:]]' -e '^$@$$'
