@@ -93,7 +93,6 @@ impl AutoStitcher {
         }
 
         let result = fit_and_stitch(seq, &self.config, self.fit_method)?;
-        record_sequence_length(0);
         Ok(Some(result))
     }
 
