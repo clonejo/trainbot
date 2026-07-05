@@ -209,7 +209,7 @@ pub struct DetectArgs {
     // Rust-only
     #[arg(
         long,
-        default_value = "ols",
+        default_value = "ransac",
         value_name = "METHOD",
         help = "RANSAC fit method: ols|ransac"
     )]
