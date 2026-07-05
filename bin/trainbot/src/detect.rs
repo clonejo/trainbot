@@ -1,7 +1,7 @@
 use std::time::{Duration, SystemTime};
 
 use anyhow::Context;
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Local};
 use clap::Parser;
 use image::DynamicImage;
 use rusqlite::Connection;
@@ -183,8 +183,8 @@ fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn Fram
 }
 
 fn save_train(train: &Train, ds: &DataStore, conn: &Connection) -> anyhow::Result<()> {
-    let dt_utc: DateTime<Utc> = train.start_ts.into();
-    let dt_fixed = dt_utc.fixed_offset();
+    let dt_local: DateTime<Local> = train.start_ts.into();
+    let dt_fixed = dt_local.fixed_offset();
 
     // Use start_ts to generate filenames (id=0 is a placeholder before DB insert)
     let row = queries::Train {
