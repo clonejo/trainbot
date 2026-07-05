@@ -11,10 +11,14 @@ pub enum Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Open (or create) the SQLite database at `path`, run the embedded schema, and
-/// return the connection.  WAL mode and foreign-key enforcement are applied.
+/// return the connection. WAL is disabled since we need to export a plain
+/// sqlite file without WAL after each train for the web frontend anyway; this
+/// also means syncing to the web frontend is just a simple file copy.
 pub fn open(path: impl AsRef<camino::Utf8Path>) -> Result<Connection> {
     let conn = Connection::open(path.as_ref())?;
-    conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")?;
+    conn.execute_batch(
+        "PRAGMA busy_timeout=5000; PRAGMA journal_mode=DELETE; PRAGMA synchronous=NORMAL; PRAGMA locking_mode=NORMAL; PRAGMA foreign_keys=ON;",
+    )?;
     conn.execute_batch(SCHEMA)?;
     Ok(conn)
 }
