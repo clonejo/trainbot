@@ -139,12 +139,10 @@ pub fn run(argv: Vec<String>) {
     }
 }
 
-const SRC_BUF_CAP: usize = 200;
-
 fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn FrameSource>> {
     if args.input.starts_with("http://") || args.input.starts_with("https://") {
         let src = vid::MjpegHttpSrc::open(&args.input).context("open MjpegHttpSrc")?;
-        return Ok(Box::new(vid::BufSrc::new(src, SRC_BUF_CAP)));
+        return Ok(Box::new(vid::BufSrc::new(src, args.src_buf_cap)));
     }
 
     if args.input == "picam3" {
@@ -159,7 +157,7 @@ fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn Fram
             fps: 40, // TODO: make configurable
         })
         .context("open PiCam3")?;
-        return Ok(Box::new(vid::BufSrc::new(src, SRC_BUF_CAP)));
+        return Ok(Box::new(vid::BufSrc::new(src, args.src_buf_cap)));
     }
 
     #[cfg(target_os = "linux")]
@@ -175,7 +173,7 @@ fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn Fram
                 height: args.camera_h,
             })
             .context("open CamSrc")?;
-            return Ok(Box::new(vid::BufSrc::new(src, SRC_BUF_CAP)));
+            return Ok(Box::new(vid::BufSrc::new(src, args.src_buf_cap)));
         }
     }
 

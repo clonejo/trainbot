@@ -51,6 +51,14 @@ pub struct DetectArgs {
     pub constant_frame_time_micros: Option<u64>,
     #[arg(
         long,
+        env,
+        default_value_t = 200,
+        value_name = "N",
+        help = "Number of frames to buffer between the frame source and the AutoStitcher thread. (Only used for live sources.)"
+    )]
+    pub src_buf_cap: usize,
+    #[arg(
+        long,
         env = "CAMERA_W",
         default_value_t = 1920,
         value_name = "X",
