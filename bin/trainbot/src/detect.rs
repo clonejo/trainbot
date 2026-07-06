@@ -215,7 +215,7 @@ fn save_train(train: &Train, ds: &DataStore, conn: &Connection) -> anyhow::Resul
         train.accel_px_s2,
         train.conf.pixels_per_m,
     )
-    .context("insert_train")?;
+    .with_context(|| format!("insert_train, same start_ts={dt_fixed} already in database?"))?;
 
     tracing::info!(
         id,
