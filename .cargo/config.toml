@@ -1,5 +1,0 @@
-[target.x86_64-unknown-linux-musl]
-linker = "musl-gcc"
-
-# aarch64-unknown-linux-musl is built via `cross` in CI, which supplies its
-# own musl-capable cross-compiler inside the cross Docker image.

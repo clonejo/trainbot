@@ -158,7 +158,7 @@ deploy_trainbot: rust_build_arm64
 	ssh $(host) systemctl --user stop trainbot-rsync-uploader.service
 
 	#ssh $(host) sudo apt-get install -y inotify-tools
-	rsync target/aarch64-unknown-linux-musl/release/trainbot $(host):trainbot/trainbot-arm64
+	rsync target/aarch64-unknown-linux-gnu/release/trainbot $(host):trainbot/trainbot-arm64
 	rsync ./rsync-uploader $(host):trainbot/
 
 	ssh $(host) loginctl enable-linger
@@ -179,7 +179,8 @@ rust_check:
 	cargo fmt --check
 
 rust_build_arm64:
-	CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc cargo build --release --target=aarch64-unknown-linux-musl
+	rustup target add aarch64-unknown-linux-gnu
+	RUSTFLAGS='-C target-feature=+crt-static -C linker=aarch64-linux-gnu-gcc' cargo build --release --target=aarch64-unknown-linux-gnu
 
 rust_perf:
 	samply record target/release/trainbot --input internal/pkg/stitch/testdata/set0/day.mp4 -X 0 -Y 0 -W 300 -H 300

@@ -49,7 +49,6 @@ RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
 # Install Rust build dependencies:
 #   clang + libclang-dev  — bindgen (v4l2-sys, bundled SQLite)
 #   linux-libc-dev        — <linux/videodev2.h> for v4l2-sys
-#   musl-tools            — musl-gcc for x86_64-unknown-linux-musl target
 # Bookworm ships LLVM/clang 14; adjust LIBCLANG_PATH if upgrading the base image.
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
     --mount=target=/var/cache/apt,type=cache,sharing=locked \
@@ -57,8 +56,7 @@ RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
     apt-get install -yq                                     \
         clang                                               \
         libclang-dev                                        \
-        linux-libc-dev                                      \
-        musl-tools
+        linux-libc-dev
 
 # Install Rust toolchain globally so it is available to the build user.
 # CARGO_HOME/RUSTUP_HOME under /usr/local are made world-writable so the
