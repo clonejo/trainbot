@@ -33,6 +33,9 @@ pub(crate) fn create_video(seq: &Sequence, encoder: Encoder) -> Result<Vec<u8>, 
     // But Android does not support ismv (MPEG-4 Part 12). So back to mp4 (MPEG-4 Part 14) we are,
     // now with writing to file on tmpfs.
 
+    // I dropped the idea to set -crf. I have to go pretty low (<=17) to get nice still frames. And
+    // it would be cool if the videos were good enough to restitch later.
+
     let (reader, mut writer) = pipe()?;
     let mut output_tempfile = tempfile_in_ramdisk()?;
     #[rustfmt::skip]
@@ -47,7 +50,6 @@ pub(crate) fn create_video(seq: &Sequence, encoder: Encoder) -> Result<Vec<u8>, 
         "-profile:v", "high",
         "-vf", "format=yuv420p",
         "-movflags", "+faststart",
-        // TODO: -b:v BITRATE ? constant quality supported by raspi hw encoder?
         "-y", // overwrite as output_tempfile was already created
         output_tempfile.path(),
     )
