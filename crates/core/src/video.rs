@@ -1,8 +1,10 @@
 use std::ffi::OsString;
-use std::io::{pipe, Write};
+use std::io::{pipe, Read, Write};
 use std::time::SystemTimeError;
 
 use bytes::{BufMut, Bytes, BytesMut};
+use camino::Utf8PathBuf;
+use camino_tempfile::NamedUtf8TempFile;
 use clap::ValueEnum;
 use duct::cmd;
 use mkv_element::io::blocking_impl::*;
@@ -24,25 +26,35 @@ pub(crate) fn create_video(seq: &Sequence, encoder: Encoder) -> Result<Vec<u8>, 
 
     // libsvtav1 is terribly slow on a raspi 4, no chance.
     // h264_v4l2m2m encoded my 400x700 video at 1.5x realtime speed
-    //let encoder: String = encoder.into();
+
+    // -f / muxer:
+    // ffmpeg's mp4 "muxer does not support non seekable output", so i tried ismv, so i can just
+    // read ffmpeg's stdout.
+    // But Android does not support ismv (MPEG-4 Part 12). So back to mp4 (MPEG-4 Part 14) we are,
+    // now with writing to file on tmpfs.
 
     let (reader, mut writer) = pipe()?;
+    let mut output_tempfile = tempfile_in_ramdisk()?;
     #[rustfmt::skip]
     let ffmpeg = cmd!(
         "ffmpeg",
         "-loglevel", "repeat+level+warning",
         "-i", "-",
-        "-f", "ismv", // MP4 errors out with "muxer does not support non seekable output"
+        "-f", "mp4",
         "-fps_mode", "passthrough",
         "-c:v", encoder.to_osstring(),
         "-b:v", "2048k",
+        "-profile:v", "high",
+        "-vf", "format=yuv420p",
+        "-movflags", "+faststart",
         // TODO: -b:v BITRATE ? constant quality supported by raspi hw encoder?
-        "-"
+        "-y", // overwrite as output_tempfile was already created
+        output_tempfile.path(),
     )
     .stdin_file(reader)
-    .stdout_capture()
     .start()?;
 
+    // To debug what we pipe to ffmpeg:
     //let mut writer = std::fs::File::create("create_video_debug.mkv")?;
 
     // Create an EBML header element
@@ -112,10 +124,12 @@ pub(crate) fn create_video(seq: &Sequence, encoder: Encoder) -> Result<Vec<u8>, 
         cluster.write_to(&mut writer)?;
     }
 
-    // close ffmpeg's stdin:
+    // close ffmpeg's stdin and wait for exit:
     drop(writer);
+    ffmpeg.wait()?;
 
-    let encoded = ffmpeg.into_output()?.stdout;
+    let mut encoded = Vec::new();
+    output_tempfile.read_to_end(&mut encoded)?;
     debug!(bytes = encoded.len(), "got encoded bytes from ffmpeg");
     Ok(encoded)
 }
@@ -184,4 +198,15 @@ fn simple_block_body(
     out.put_u8(if keyframe { 0x80 } else { 0x00 }); // flags: keyframe set, no lacing
     out.put(payload); // the actual frame
     Ok(())
+}
+
+fn tempfile_in_ramdisk() -> Result<NamedUtf8TempFile, std::io::Error> {
+    #[cfg(not(target_os = "linux"))]
+    let tempdir = Utf8PathBuf::from_path_buf(std::env::temp_dir());
+    #[cfg(target_os = "linux")]
+    let tempdir = Utf8PathBuf::from("/dev/shm");
+
+    camino_tempfile::Builder::new()
+        .prefix("trainbot_")
+        .tempfile_in(tempdir)
 }
