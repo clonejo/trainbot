@@ -10,7 +10,6 @@ members = [
   "bin/trainbot",
   "tests/conformance",
 ]
-default-members = ["bin/trainbot"]
 resolver = "2"
 
 [workspace.dependencies]
