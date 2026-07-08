@@ -24,6 +24,7 @@ fn run_set0(name: &str, fit_method: FitMethod) -> Vec<Train> {
         min_length_m: 10.0,
         max_frame_count_per_seq: 1500,
         mask: None,
+        video_encoder: trainbot_core::VideoEncoder::Libx264,
     };
 
     let path = set0_path(name);
@@ -36,7 +37,7 @@ fn run_set0(name: &str, fit_method: FitMethod) -> Vec<Train> {
             Ok(Some(frame)) => {
                 // Crop to 300×300 (matching Go test's `r = image.Rect(0, 0, 300, 300)`).
                 let img = image::imageops::crop_imm(&frame.image, 0, 0, 300, 300).to_image();
-                if let Some(t) = stitcher.frame(img, frame.ts) {
+                if let Ok(Some(t)) = stitcher.frame(img, frame.ts) {
                     trains.push(t);
                 }
             }
@@ -45,7 +46,7 @@ fn run_set0(name: &str, fit_method: FitMethod) -> Vec<Train> {
         }
     }
 
-    if let Some(t) = stitcher.try_stitch_and_reset() {
+    if let Ok(Some(t)) = stitcher.try_stitch_and_reset() {
         trains.push(t);
     }
 
