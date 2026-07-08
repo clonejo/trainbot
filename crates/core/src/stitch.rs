@@ -53,10 +53,10 @@ pub(crate) fn stitch(
     let fw = frames[0].width() as i32;
     let fh = frames[0].height() as i32;
 
-    let sign = i_sign(dx[0]);
+    let sign = dx[0].signum();
     let mut w = fw * sign;
     for &x in &dx[1..] {
-        if i_sign(x) != sign {
+        if x.signum() != sign {
             return Err(StitchError::InconsistentSign);
         }
         w += x;
@@ -217,14 +217,4 @@ pub(crate) fn fit_and_stitch(
         gif_data,
         video_data,
     })
-}
-
-fn i_sign(x: i32) -> i32 {
-    if x > 0 {
-        1
-    } else if x < 0 {
-        -1
-    } else {
-        0
-    }
 }
