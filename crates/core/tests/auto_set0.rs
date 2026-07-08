@@ -1,20 +1,8 @@
 use trainbot_core::{AutoStitcher, Config, FitMethod, Train};
 use vid::{FileSrc, FrameSource};
 
-fn set0_path(name: &str) -> String {
-    format!(
-        "{}/../../internal/pkg/stitch/testdata/set0/{name}",
-        env!("CARGO_MANIFEST_DIR")
-    )
-}
-
-fn ffmpeg_available() -> bool {
-    std::process::Command::new("ffprobe")
-        .arg("-version")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
-}
+mod common;
+use common::*;
 
 fn run_set0(name: &str, fit_method: FitMethod) -> Vec<Train> {
     let config = Config {
@@ -27,7 +15,7 @@ fn run_set0(name: &str, fit_method: FitMethod) -> Vec<Train> {
         video_encoder: trainbot_core::VideoEncoder::Libx264,
     };
 
-    let path = set0_path(name);
+    let path = testdata_path(&format!("set0/{}", name));
     let mut src = FileSrc::open(&path).unwrap_or_else(|e| panic!("open {name}: {e}"));
     let mut stitcher = AutoStitcher::new(config, fit_method);
     let mut trains = Vec::new();
@@ -64,13 +52,6 @@ fn save_image(train: &Train, stem: &str, method: FitMethod) {
     image::DynamicImage::ImageRgba8(train.image.clone())
         .save(&path)
         .unwrap_or_else(|e| eprintln!("save {path:?}: {e}"));
-}
-
-fn assert_near(got: f64, want: f64, tol: f64, label: &str) {
-    assert!(
-        (got - want).abs() <= tol,
-        "{label}: got {got:.3}, want {want:.3} ± {tol}"
-    );
 }
 
 #[test]
