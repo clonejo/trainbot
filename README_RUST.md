@@ -21,7 +21,6 @@ To build the Rust code directly on your OS you need:
 | clang + libclang | bindgen (v4l2-sys, SQLite) | `clang` | `clang libclang-dev` | `clang clang-devel` |
 | Linux kernel headers | `<linux/videodev2.h>` | `linux-headers` | `linux-libc-dev` | `kernel-headers` |
 
-
 ```bash
 cargo build --release
 ```
@@ -33,6 +32,12 @@ rustup target add aarch64-unknown-linux-gnu
 pacman -S aarch64-linux-gnu-gcc aarch64-linux-gnu-glibc
 RUSTFLAGS='-C target-feature=+crt-static' cargo build --release --target aarch64-unknown-linux-gnu -p trainbot
 ```
+
+## Changelog / Breaking changes
+
+(sorted new to old)
+
+- Migration to Rust. New build requirements. (S)FTP upload feature has been dropped, as i was not using it. I am open for contributions to reimplement it.
 
 ## Performance testing
 
