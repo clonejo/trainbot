@@ -2131,6 +2131,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "testdata"
+version = "0.1.0"
+dependencies = [
+ "camino",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2369,6 +2376,7 @@ dependencies = [
  "pmatch",
  "ransac",
  "scopeguard",
+ "testdata",
  "thiserror 2.0.18",
  "tracing",
  "tracing-subscriber",
@@ -2461,6 +2469,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "testdata",
  "thiserror 2.0.18",
  "tracing",
  "v4l",

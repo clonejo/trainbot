@@ -104,24 +104,12 @@ fn read_exact_or_eof(r: &mut impl Read, buf: &mut [u8]) -> std::io::Result<usize
 
 #[cfg(test)]
 mod tests {
+    use testdata::{assert_ffmpeg_available, testdata_path};
+
     use super::*;
 
-    fn set0_path(name: &str) -> String {
-        format!(
-            "{}/../../internal/pkg/stitch/testdata/set0/{name}",
-            env!("CARGO_MANIFEST_DIR")
-        )
-    }
-
-    fn ffprobe_available() -> bool {
-        std::process::Command::new("ffprobe")
-            .arg("-version")
-            .output()
-            .is_ok()
-    }
-
     fn count_frames(name: &str) -> u32 {
-        let path = set0_path(name);
+        let path = testdata_path(&format!("set0/{name}"));
         let mut src = FileSrc::open(&path).unwrap_or_else(|e| panic!("open {name}: {e}"));
         assert!(src.width() > 0 && src.height() > 0);
         let mut n = 0u32;
@@ -133,40 +121,28 @@ mod tests {
 
     #[test]
     fn file_src_day_frame_count() {
-        if !ffprobe_available() {
-            eprintln!("skip: ffprobe not found");
-            return;
-        }
+        assert_ffmpeg_available();
         let n = count_frames("day.mp4");
         assert!((182..=184).contains(&n), "expected 183 frames, got {n}");
     }
 
     #[test]
     fn file_src_night_frame_count() {
-        if !ffprobe_available() {
-            eprintln!("skip: ffprobe not found");
-            return;
-        }
+        assert_ffmpeg_available();
         let n = count_frames("night.mp4");
         assert!((206..=208).contains(&n), "expected 207 frames, got {n}");
     }
 
     #[test]
     fn file_src_rain_frame_count() {
-        if !ffprobe_available() {
-            eprintln!("skip: ffprobe not found");
-            return;
-        }
+        assert_ffmpeg_available();
         let n = count_frames("rain.mp4");
         assert!((196..=198).contains(&n), "expected 197 frames, got {n}");
     }
 
     #[test]
     fn file_src_snow_frame_count() {
-        if !ffprobe_available() {
-            eprintln!("skip: ffprobe not found");
-            return;
-        }
+        assert_ffmpeg_available();
         let n = count_frames("snow.mp4");
         assert!((88..=90).contains(&n), "expected 89 frames, got {n}");
     }

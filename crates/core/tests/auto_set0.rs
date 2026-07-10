@@ -1,8 +1,6 @@
+use testdata::{assert_ffmpeg_available, assert_near, testdata_path};
 use trainbot_core::{AutoStitcher, Config, FitMethod, Train};
 use vid::{FileSrc, FrameSource};
-
-mod common;
-use common::*;
 
 fn run_set0(name: &str, fit_method: FitMethod) -> Vec<Train> {
     let config = Config {

@@ -30,4 +30,6 @@ camino-tempfile = "1.4.1"
 camino.workspace = true
 
 [dev-dependencies]
+testdata = { path = "../testdata" }
+
 image = { workspace = true, features = ["jpeg", "png"] }

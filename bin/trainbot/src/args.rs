@@ -43,7 +43,12 @@ pub struct DetectArgs {
         help = "Camera pixel format FourCC string, ignored if using video file"
     )]
     pub camera_format_fourcc: String,
-    #[arg(long,env, default_value_t=30, help="Frames per second, used in rpicam mode selection.")]
+    #[arg(
+        long,
+        env,
+        default_value_t = 30,
+        help = "Frames per second, used in rpicam mode selection."
+    )]
     pub fps: u32,
     #[arg(
         long,
