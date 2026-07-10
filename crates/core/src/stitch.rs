@@ -1,4 +1,4 @@
-use image::RgbaImage;
+use image::{Pixel, RgbaImage};
 use thiserror::Error;
 
 use crate::fit::{fit_dx, FitDxError, FitMethod};
@@ -101,42 +101,32 @@ pub(crate) fn stitch(
 /// **Assumes opaque frames** (src alpha = 255 for all pixels), which is always
 /// true for video frames.  Under that assumption the effective source alpha is
 /// simply `mask_a`, and the Porter-Duff Over formula reduces to:
-///
-/// ```text
-/// out_a  = mask_a + dst_a * (255 - mask_a) / 255
-/// out_ch = (src_ch * mask_a + dst_ch * dst_a * (255 - mask_a) / 255) / out_a
-/// ```
 fn composite(dst: &mut RgbaImage, frame: &RgbaImage, mask: Option<&RgbaImage>, x: i64, y: i64) {
     match mask {
         None => image::imageops::overlay(dst, frame, x, y),
         Some(mask) => {
-            let dst_w = dst.width() as i64;
-            let dst_h = dst.height() as i64;
-            for (fx, fy, src) in frame.enumerate_pixels() {
-                let mask_a = mask.get_pixel(fx, fy)[3] as u32;
-                if mask_a == 0 {
-                    continue;
+            let dst_y_min: u32 = y.clamp(0, dst.height().into()).try_into().unwrap();
+            let dst_x_min: u32 = x.clamp(0, dst.width().into()).try_into().unwrap();
+
+            let dst_y_max: u32 = (y + frame.height() as i64)
+                .clamp(0, dst.height().into())
+                .try_into()
+                .unwrap();
+            let dst_x_max: u32 = (x + frame.width() as i64)
+                .clamp(0, dst.width().into())
+                .try_into()
+                .unwrap();
+
+            for (fy, dst_y) in (0..frame.height()).zip(dst_y_min..dst_y_max) {
+                for (fx, dst_x) in (0..frame.width()).zip(dst_x_min..dst_x_max) {
+                    //let fy = dst_y - y;
+                    //let fx = dst_x - x;
+                    let mut src_pixel = *frame.get_pixel(fx, fy);
+                    src_pixel[3] = mask.get_pixel(fx, fy)[3];
+
+                    let dst_px = dst.get_pixel_mut(dst_x, dst_y);
+                    dst_px.blend(&src_pixel);
                 }
-                let px = x + fx as i64;
-                let py = y + fy as i64;
-                if px < 0 || py < 0 || px >= dst_w || py >= dst_h {
-                    continue;
-                }
-                // src alpha = 255 (opaque frame), so effective src_a = mask_a.
-                let inv_mask_a = 255 - mask_a;
-                let dst_px = dst.get_pixel_mut(px as u32, py as u32);
-                let dst_a = dst_px[3] as u32;
-                let out_a = mask_a + dst_a * inv_mask_a / 255;
-                if out_a == 0 {
-                    continue;
-                }
-                dst_px[0] = ((src[0] as u32 * mask_a + dst_px[0] as u32 * dst_a * inv_mask_a / 255)
-                    / out_a) as u8;
-                dst_px[1] = ((src[1] as u32 * mask_a + dst_px[1] as u32 * dst_a * inv_mask_a / 255)
-                    / out_a) as u8;
-                dst_px[2] = ((src[2] as u32 * mask_a + dst_px[2] as u32 * dst_a * inv_mask_a / 255)
-                    / out_a) as u8;
-                dst_px[3] = out_a as u8;
             }
         }
     }
