@@ -8,6 +8,9 @@ pmatch = { path = "../cv/pmatch" }
 avg = { path = "../cv/avg" }
 ransac = { path = "../cv/ransac" }
 vid = { path = "../vid" }
+imutil = { path = "../imutil" }
+
+anyhow = { workspace = true }
 image = { workspace = true, features = ["jpeg", "png"] }
 thiserror = { workspace = true }
 tracing = "0.1"
@@ -33,3 +36,4 @@ camino.workspace = true
 testdata = { path = "../testdata" }
 
 image = { workspace = true, features = ["jpeg", "png"] }
+image-compare = "0.5.0"

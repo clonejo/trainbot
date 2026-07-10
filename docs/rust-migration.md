@@ -198,10 +198,11 @@ RANSAC structure and hyper-parameters from `fitDx`/`fit_dx` are identical: `min_
 - [x] Threaded pipeline: source queue → `findOffset` (discard|record) → sequence → `fitDx` → stitch → image, using `std::thread` + `crossbeam-channel`
 - [x] `tracing` spans per stage
 - [x] GIF creation
+- [ ] Error out if mask has different dimensions from frame source.
 
 **Verify (strongest drop-in check)**
 - [x] Run all four set0 videos; assert exact `auto_set0_test.go` numbers (frames / speed / accel)
-- [ ] Image similarity vs `testdata/set0/*.jpg`
+- [ ] Image similarity vs `testdata/set0/*.jpg`. Use `image-compare`.
 
 **Exit criteria**
 - [x] All four scenarios reproduce Go within tolerance and visually match
