@@ -1,4 +1,4 @@
-use image::{Pixel, RgbaImage};
+use image::{Pixel, Rgba, RgbaImage};
 use thiserror::Error;
 
 use crate::fit::{fit_dx, FitDxError, FitMethod};
@@ -73,7 +73,7 @@ pub(crate) fn stitch(
         });
     }
 
-    let mut img = RgbaImage::new(img_w, img_h);
+    let mut img = RgbaImage::from_pixel(img_w, img_h, Rgba([0, 0, 0, 255]));
 
     if w > 0 {
         // Forward (leftward train): earlier frames on the left.
