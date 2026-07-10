@@ -173,7 +173,7 @@ deploy_confighelper: docker_build
 	rsync build/confighelper-arm64 $(host):trainbot/
 
 rust_check:
-	cargo test
+	cargo test --release
 	cargo clippy
 	cargo clippy --tests
 	cargo fmt --check
