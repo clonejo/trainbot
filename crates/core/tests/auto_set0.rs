@@ -56,10 +56,7 @@ fn save_image(train: &Train, stem: &str, method: FitMethod) {
 
 #[test]
 fn test_set0_day() {
-    if !ffmpeg_available() {
-        eprintln!("skip: ffprobe not found");
-        return;
-    }
+    assert_ffmpeg_available();
     // OLS: deterministic, matches Go within ±0.1 m/s.
     // RANSAC: different RNG from Go's math/rand; ±0.15 m/s tolerance.
     for (method, speed_tol) in [(FitMethod::Ols, 0.1_f64), (FitMethod::Ransac, 0.15)] {
@@ -91,10 +88,7 @@ fn test_set0_day() {
 
 #[test]
 fn test_set0_night() {
-    if !ffmpeg_available() {
-        eprintln!("skip: ffprobe not found");
-        return;
-    }
+    assert_ffmpeg_available();
     for (method, speed_tol) in [(FitMethod::Ols, 0.1_f64), (FitMethod::Ransac, 0.15)] {
         let trains = run_set0("night.mp4", method);
         assert_eq!(
@@ -129,10 +123,7 @@ fn test_set0_night() {
 
 #[test]
 fn test_set0_rain() {
-    if !ffmpeg_available() {
-        eprintln!("skip: ffprobe not found");
-        return;
-    }
+    assert_ffmpeg_available();
     for (method, speed_tol) in [(FitMethod::Ols, 0.1_f64), (FitMethod::Ransac, 0.15)] {
         let trains = run_set0("rain.mp4", method);
         assert_eq!(
@@ -167,10 +158,7 @@ fn test_set0_rain() {
 
 #[test]
 fn test_set0_snow() {
-    if !ffmpeg_available() {
-        eprintln!("skip: ffprobe not found");
-        return;
-    }
+    assert_ffmpeg_available();
     for (method, speed_tol) in [(FitMethod::Ols, 0.1_f64), (FitMethod::Ransac, 0.15)] {
         let trains = run_set0("snow.mp4", method);
         assert_eq!(

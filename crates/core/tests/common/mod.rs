@@ -5,12 +5,15 @@ pub(crate) fn testdata_path(name: &str) -> String {
     )
 }
 
-pub(crate) fn ffmpeg_available() -> bool {
-    std::process::Command::new("ffprobe")
+pub(crate) fn assert_ffmpeg_available() {
+    let ffmpeg_available = std::process::Command::new("ffprobe")
         .arg("-version")
         .output()
         .map(|o| o.status.success())
-        .unwrap_or(false)
+        .unwrap_or(false);
+    if !ffmpeg_available {
+        panic!("ffprobe not found");
+    }
 }
 pub(crate) fn assert_near(got: f64, want: f64, tol: f64, label: &str) {
     assert!(
