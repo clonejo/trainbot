@@ -130,8 +130,9 @@ fn open_source(args: &ConfighelperArgs) -> anyhow::Result<Box<dyn FrameSource>> 
         }
     }
 
+    let path = Utf8PathBuf::from_str(&args.input).expect("--input path must be UTF-8");
     Ok(Box::new(
-        vid::FileSrc::open(&args.input).context("open FileSrc")?,
+        vid::FileSrc::open(path.as_path()).context("open FileSrc")?,
     ))
 }
 

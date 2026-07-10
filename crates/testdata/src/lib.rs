@@ -1,8 +1,12 @@
-pub fn testdata_path(name: &str) -> String {
-    format!(
-        "{}/../../internal/pkg/stitch/testdata/{name}",
-        env!("CARGO_MANIFEST_DIR")
-    )
+use std::str::FromStr as _;
+
+use camino::Utf8PathBuf;
+
+pub fn testdata_path(name: &str) -> Utf8PathBuf {
+    Utf8PathBuf::from_str(env!("CARGO_MANIFEST_DIR"))
+        .unwrap()
+        .join("../../internal/pkg/stitch/testdata")
+        .join(name)
 }
 
 pub fn assert_ffmpeg_available() {

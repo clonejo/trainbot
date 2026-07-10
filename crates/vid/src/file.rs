@@ -1,4 +1,5 @@
 use crate::{Error, Frame, FrameSource, Result, ffprobe};
+use camino::Utf8Path;
 use duct::ReaderHandle;
 use image::RgbaImage;
 use std::io::Read;
@@ -15,7 +16,7 @@ pub struct FileSrc {
 }
 
 impl FileSrc {
-    pub fn open(path: &str) -> Result<Self> {
+    pub fn open(path: &Utf8Path) -> Result<Self> {
         let info = ffprobe::probe(path)?;
         let frame_bytes = (info.width * info.height * 4) as usize;
 

@@ -1,4 +1,5 @@
 use crate::{Error, Result};
+use camino::Utf8Path;
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use std::time::SystemTime;
@@ -29,7 +30,7 @@ pub struct VideoInfo {
     pub start_time: Option<SystemTime>,
 }
 
-pub fn probe(path: &str) -> Result<VideoInfo> {
+pub fn probe(path: &Utf8Path) -> Result<VideoInfo> {
     #[rustfmt::skip]
     let out = duct::cmd!(
         "ffprobe",
