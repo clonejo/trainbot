@@ -30,12 +30,11 @@ pub struct VideoInfo {
 }
 
 pub fn probe(path: &str) -> Result<VideoInfo> {
+    #[rustfmt::skip]
     let out = duct::cmd!(
         "ffprobe",
-        "-v",
-        "quiet",
-        "-print_format",
-        "json",
+        "-v", "quiet",
+        "-print_format", "json",
         "-show_streams",
         path
     )

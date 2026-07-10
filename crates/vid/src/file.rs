@@ -19,16 +19,13 @@ impl FileSrc {
         let info = ffprobe::probe(path)?;
         let frame_bytes = (info.width * info.height * 4) as usize;
 
+        #[rustfmt::skip]
         let reader = duct::cmd!(
             "ffmpeg",
-            "-loglevel",
-            "error",
-            "-i",
-            path,
-            "-f",
-            "rawvideo",
-            "-pix_fmt",
-            "rgba",
+            "-loglevel", "error",
+            "-i", path,
+            "-f", "rawvideo",
+            "-pix_fmt", "rgba",
             "pipe:1"
         )
         .reader()
