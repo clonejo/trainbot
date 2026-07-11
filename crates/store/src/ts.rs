@@ -27,7 +27,7 @@ pub fn format_db_ts(dt: &DateTime<FixedOffset>) -> String {
     let nanos = dt.timestamp_subsec_nanos();
     let frac = format_nanos_trimmed(nanos);
     let tz = format_db_offset(dt.offset().local_minus_utc());
-    format!("{}{frac}{tz}", dt.format("%Y-%m-%dT%H:%M:%S"))
+    format!("{}{frac}{tz}", dt.format("%Y-%m-%d %H:%M:%S"))
 }
 
 /// Parse a timestamp from SQLite storage (RFC 3339 with optional fractional seconds).
@@ -104,16 +104,24 @@ mod tests {
 
     #[test]
     fn db_ts_roundtrip() {
-        let dt = parse("2023-06-10T16:20:58.805+02:00");
+        let dt = parse("2023-06-10 16:20:58.805+02:00");
         let stored = format_db_ts(&dt);
-        assert_eq!(stored, "2023-06-10T16:20:58.805+02:00");
+        assert_eq!(stored, "2023-06-10 16:20:58.805+02:00");
         let back = parse_db_ts(&stored).unwrap();
         assert_eq!(back, dt);
     }
 
     #[test]
     fn db_ts_millis() {
-        let dt = parse("2023-11-10T12:57:45.897+01:00");
-        assert_eq!(format_db_ts(&dt), "2023-11-10T12:57:45.897+01:00");
+        let dt = parse("2023-11-10 12:57:45.897+01:00");
+        assert_eq!(format_db_ts(&dt), "2023-11-10 12:57:45.897+01:00");
+    }
+
+    #[test]
+    fn db_ts_go_samples() {
+        // "T" separator is not accepted by Vue/Javascript frontend
+        let go = "2026-07-05 15:22:22.219263711+02:00";
+        let dt = parse(go);
+        assert_eq!(format_db_ts(&dt), go);
     }
 }
