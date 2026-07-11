@@ -33,6 +33,7 @@ export default ({ mode }) => {
           secure: false
         }
       }
-    }
+    },
+    base: process.env.VITE_FRONTEND_BASE_URL
   })
 }

@@ -4,6 +4,7 @@
 DOCKER_BASE_IMAGE = node:24.17.0-alpine3.23
 FRONTEND_DEPLOY_TARGET_SSH_HOST_ = ${FRONTEND_DEPLOY_TARGET_SSH_HOST}
 VITE_FRONTEND_BASE_URL_ = ${VITE_FRONTEND_BASE_URL}
+VITE_FRONTEND_DATA_URL_ = ${VITE_FRONTEND_DATA_URL}
 
 run:
 	VITE_BASE_URL=http://localhost:5173/ \
@@ -23,6 +24,7 @@ format:
 
 build:
 	test -n "$(VITE_FRONTEND_BASE_URL_)" # missing env var, please set up env file from env.example and source it
+	test -n "$(VITE_FRONTEND_DATA_URL_)" # missing env var, please set up env file from env.example and source it
 	VITE_BASE_URL=$(VITE_FRONTEND_BASE_URL_) \
 	VITE_DB_URL=$(VITE_FRONTEND_BASE_URL_)/data/db.sqlite3 \
 	VITE_BLOBS_URL=$(VITE_FRONTEND_BASE_URL_)/data/blobs \
@@ -32,7 +34,7 @@ deploy: build
 	test -n "$(FRONTEND_DEPLOY_TARGET_SSH_HOST_)" # missing env var, please set up env file from env.example and source it
 	rm -rf dist/_data
 	chmod 755 dist/
-	rsync --verbose --archive --compress --rsh=ssh dist/ $(FRONTEND_DEPLOY_TARGET_SSH_HOST_)
+	rsync --verbose --archive --compress --rsh=ssh --exclude=data dist/ $(FRONTEND_DEPLOY_TARGET_SSH_HOST_)
 
 DOCKER_FLAGS = $(DOCKER_CLI_FLAGS)
 DOCKER_FLAGS += --build-arg DOCKER_BASE_IMAGE="$(DOCKER_BASE_IMAGE)"
