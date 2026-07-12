@@ -2,7 +2,7 @@ use crate::{Error, FourCC, Frame, FrameSource, Result, convert, jpeg_scan::JpegS
 use duct::ReaderHandle;
 use image::RgbaImage;
 use std::io::{self, BufReader, Read};
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 
 //  pi@raspberrypi:~ $ rpicam-hello --list
 //  Available cameras
@@ -134,7 +134,8 @@ impl PiCam3Src {
 
 impl FrameSource for PiCam3Src {
     fn next_frame(&mut self) -> Result<Option<Frame>> {
-        let ts = SystemTime::now();
+        let ts = Instant::now();
+        let wall = SystemTime::now();
         let w = self.w;
         let h = self.h;
 
@@ -153,7 +154,7 @@ impl FrameSource for PiCam3Src {
             }
         };
 
-        Ok(Some(Frame { image, ts }))
+        Ok(Some(Frame { image, ts, wall }))
     }
 
     fn fps(&self) -> f64 {

@@ -145,7 +145,7 @@ pub(crate) fn fit_and_stitch(
     while !seq.dx.is_empty() && *seq.dx.last().unwrap() == 0 {
         seq.dx.pop();
         seq.ts.pop();
-        seq.frames.pop();
+        seq.images.pop();
     }
     // max_px_per_frame(1) = max pixels/frame at 1 fps = max speed in px/s.
     let max_speed_px_s = config.max_px_per_frame(1.0) as f64;
@@ -175,7 +175,6 @@ pub(crate) fn fit_and_stitch(
     // bias in the speed estimate.  Preserved intentionally for parity with Go.
     let t_mid = seq.ts[seq.ts.len() / 2]
         .duration_since(seq.ts[0])
-        .unwrap_or_default()
         .as_secs_f64();
     let speed = v0 + a * t_mid;
 
@@ -187,7 +186,7 @@ pub(crate) fn fit_and_stitch(
         });
     }
 
-    let img = stitch(&seq.frames, &dx_fit, config.mask.as_ref()).map_err(|e| {
+    let img = stitch(&seq.images, &dx_fit, config.mask.as_ref()).map_err(|e| {
         record_fit_and_stitch_result("unable_to_assemble_image");
         FitAndStitchError::from(e)
     })?;
@@ -196,8 +195,8 @@ pub(crate) fn fit_and_stitch(
     record_fit_and_stitch_result("success");
 
     Ok(Train {
-        start_ts: seq.ts[0],
-        n_frames: seq.frames.len(),
+        start_ts: seq.start_wall.expect("sequence.start_wall None"),
+        n_frames: seq.images.len(),
         length_px: ds,
         // Negate: leftward motion produces positive dx, but SpeedPxS > 0 means right.
         speed_px_s: -speed,

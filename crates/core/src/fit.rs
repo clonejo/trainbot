@@ -135,15 +135,9 @@ pub(crate) fn fit_dx(
 
     for i in 0..n {
         let dt_c = if i == 0 {
-            seq.ts[i]
-                .duration_since(start_ts)
-                .unwrap_or_default()
-                .as_secs_f64()
+            seq.ts[i].duration_since(start_ts).as_secs_f64()
         } else {
-            seq.ts[i]
-                .duration_since(seq.ts[i - 1])
-                .unwrap_or_default()
-                .as_secs_f64()
+            seq.ts[i].duration_since(seq.ts[i - 1]).as_secs_f64()
         };
         dt_complete[i] = dt_c;
 
@@ -151,10 +145,7 @@ pub(crate) fn fit_dx(
             continue;
         }
 
-        let t_i = seq.ts[i]
-            .duration_since(start_ts)
-            .unwrap_or_default()
-            .as_secs_f64();
+        let t_i = seq.ts[i].duration_since(start_ts).as_secs_f64();
         t_complete[i] = t_i;
         t_fit.push(t_i);
         v_fit.push(seq.dx[i] as f64 / dt_c);

@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 use std::io::{BufRead, BufReader, Read};
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant, SystemTime};
 
 use image::ImageFormat;
 
@@ -147,13 +147,14 @@ impl FrameSource for MjpegHttpSrc {
         let image =
             image::load_from_memory_with_format(&jpeg_bytes, ImageFormat::Jpeg)?.into_rgba8();
 
-        let ts = SystemTime::now();
-        self.frame_times.push_back(ts);
+        let wall = SystemTime::now();
+        let ts = Instant::now();
+        self.frame_times.push_back(wall);
         if self.frame_times.len() > FPS_WINDOW {
             self.frame_times.pop_front();
         }
 
-        Ok(Some(Frame { image, ts }))
+        Ok(Some(Frame { image, ts, wall }))
     }
 
     fn fps(&self) -> f64 {

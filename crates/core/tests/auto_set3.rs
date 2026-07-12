@@ -33,7 +33,7 @@ fn test_masked_stitch() -> Result<()> {
     let train = loop {
         match src.next_frame() {
             Ok(Some(frame)) => {
-                if let Ok(Some(train)) = stitcher.frame(frame.image, frame.ts) {
+                if let Ok(Some(train)) = stitcher.frame(frame) {
                     break train;
                 }
             }

@@ -21,7 +21,7 @@ pub use picam3::{PiCam3Config, PiCam3Src};
 pub use cam::{CamConfig, CamSrc, detect_cams};
 
 use image::RgbaImage;
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -55,7 +55,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 pub struct Frame {
     pub image: RgbaImage,
-    pub ts: SystemTime,
+    pub ts: Instant,
+    pub wall: SystemTime,
 }
 
 pub trait FrameSource {

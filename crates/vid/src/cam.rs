@@ -3,7 +3,7 @@
 use std::{
     sync::mpsc::{self, Receiver, SyncSender},
     thread,
-    time::SystemTime,
+    time::{Instant, SystemTime},
 };
 
 use image::RgbaImage;
@@ -130,7 +130,8 @@ impl FrameSource for CamSrc {
             .map_err(|_| Error::Process("camera thread exited".into()))??;
         Ok(Some(Frame {
             image,
-            ts: SystemTime::now(),
+            ts: Instant::now(),
+            wall: SystemTime::now(),
         }))
     }
 

@@ -28,8 +28,8 @@ pub(crate) fn create_gif(seq: &Sequence, stitched: &RgbaImage) -> Vec<u8> {
         .flat_map(|c| [c[0], c[1], c[2]])
         .collect();
 
-    let fw = seq.frames[0].width() as u16;
-    let fh = seq.frames[0].height() as u16;
+    let fw = seq.images[0].width() as u16;
+    let fh = seq.images[0].height() as u16;
 
     let mut output = Vec::new();
     {
@@ -42,9 +42,9 @@ pub(crate) fn create_gif(seq: &Sequence, stitched: &RgbaImage) -> Vec<u8> {
         // prevTS starts at startTS; only updated for even-indexed frames (matching Go).
         let mut prev_ts = seq.start_ts.expect("start_ts must be set");
 
-        for i in 0..seq.frames.len() {
+        for i in 0..seq.images.len() {
             let ts = seq.ts[i];
-            let dt = ts.duration_since(prev_ts).unwrap_or_default();
+            let dt = ts.duration_since(prev_ts);
 
             if i % 2 == 1 {
                 continue;
@@ -52,7 +52,7 @@ pub(crate) fn create_gif(seq: &Sequence, stitched: &RgbaImage) -> Vec<u8> {
 
             let delay = (dt.as_secs_f64() * 100.0) as u16;
 
-            let pixels: Vec<u8> = seq.frames[i]
+            let pixels: Vec<u8> = seq.images[i]
                 .pixels()
                 .map(|p| nq.index_of(&[p[0], p[1], p[2], p[3]]) as u8)
                 .collect();

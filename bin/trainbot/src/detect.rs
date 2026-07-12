@@ -1,5 +1,5 @@
 use std::str::FromStr as _;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant};
 
 use anyhow::Context;
 use camino::Utf8PathBuf;
@@ -88,7 +88,7 @@ pub fn run(argv: Vec<String>) {
     let mut stitcher = AutoStitcher::new(config, args.fit_method);
     let mut failed_frames: usize = 0;
 
-    let mut next_frame_ts = SystemTime::now();
+    let mut next_frame_ts = Instant::now();
     loop {
         match src.next_frame() {
             Ok(Some(mut frame)) => {
@@ -97,12 +97,10 @@ pub fn run(argv: Vec<String>) {
                     next_frame_ts += Duration::from_micros(dt);
                 }
                 failed_frames = 0;
-                let img = if let Some((x, y, w, h)) = crop {
-                    image::imageops::crop_imm(&frame.image, x, y, w, h).to_image()
-                } else {
-                    frame.image
+                if let Some((x, y, w, h)) = crop {
+                    frame.image = image::imageops::crop_imm(&frame.image, x, y, w, h).to_image()
                 };
-                if let Ok(Some(train)) = stitcher.frame(img, frame.ts).inspect_err(|err| {
+                if let Ok(Some(train)) = stitcher.frame(frame).inspect_err(|err| {
                     warn!(%err, "Failed to fit and stitch");
                     save_failed_video(err, &ds);
                 }) && let Err(e) = save_train(&train, &ds, &conn)

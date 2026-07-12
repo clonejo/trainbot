@@ -22,7 +22,7 @@ pub const EXTENSION: &str = "mp4";
 /// ffmpeg. That's why we generate an mkv stream to pass to ffmpeg.
 pub(crate) fn create_video(seq: &Sequence, encoder: Encoder) -> Result<Vec<u8>, VideoError> {
     let first_ts = *seq.ts.first().ok_or(VideoError::FramesEmpty)?;
-    let first_frame = seq.frames.first().ok_or(VideoError::FramesEmpty)?;
+    let first_frame = seq.images.first().ok_or(VideoError::FramesEmpty)?;
 
     // libsvtav1 is terribly slow on a raspi 4, no chance.
     // h264_v4l2m2m encoded my 400x700 video at 1.5x realtime speed
@@ -103,7 +103,7 @@ pub(crate) fn create_video(seq: &Sequence, encoder: Encoder) -> Result<Vec<u8>, 
 
     // mkv-element does not support streamed writing, so we take the lazy way and create a
     // segment for each frame:
-    for (frame, ts) in seq.frames.iter().zip(&seq.ts) {
+    for (frame, ts) in seq.images.iter().zip(&seq.ts) {
         let raw_pixels = frame.as_raw();
         let mut frame_bytes = BytesMut::with_capacity(4 + raw_pixels.len());
         // mkv-element does not actually support serializing Frames, so we do that on our own:
@@ -112,7 +112,7 @@ pub(crate) fn create_video(seq: &Sequence, encoder: Encoder) -> Result<Vec<u8>, 
         // FIXME: switch ts from SystemTime to Instant, (and have a separate SystemTime for
         // start of sequence) to avoid errors like this:
         let mkv_timestamp = u64::try_from(
-            ts.duration_since(first_ts)?.as_millis(), /* mkv has milliseconds as default */
+            ts.duration_since(first_ts).as_millis(), /* mkv has milliseconds as default */
         )
         .unwrap()
             * TIMESTAMP_SCALE.0;

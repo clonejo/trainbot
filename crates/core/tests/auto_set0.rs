@@ -88,10 +88,10 @@ fn run_set0(video_stem: &str, fit_method: FitMethod) -> Vec<Train> {
 
     loop {
         match src.next_frame() {
-            Ok(Some(frame)) => {
+            Ok(Some(mut frame)) => {
                 // Crop to 300×300 (matching Go test's `r = image.Rect(0, 0, 300, 300)`).
-                let img = image::imageops::crop_imm(&frame.image, 0, 0, 300, 300).to_image();
-                if let Ok(Some(t)) = stitcher.frame(img, frame.ts) {
+                frame.image = image::imageops::crop_imm(&frame.image, 0, 0, 300, 300).to_image();
+                if let Ok(Some(t)) = stitcher.frame(frame) {
                     trains.push(t);
                 }
             }

@@ -3,14 +3,15 @@ use camino::Utf8Path;
 use duct::ReaderHandle;
 use image::RgbaImage;
 use std::io::Read;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 pub struct FileSrc {
     reader: ReaderHandle,
     width: u32,
     height: u32,
     fps: f64,
-    start_time: SystemTime,
+    start_ts: Instant,
+    start_time_wall: SystemTime,
     frame_pts: Vec<f64>,
     frames_processed: usize,
     buf: Vec<u8>,
@@ -38,7 +39,8 @@ impl FileSrc {
             width: info.width,
             height: info.height,
             fps: info.fps,
-            start_time: info.start_time.unwrap_or(UNIX_EPOCH),
+            start_ts: Instant::now(), /* the absolute value does not matter */
+            start_time_wall: info.start_time.unwrap_or(UNIX_EPOCH),
             frame_pts: info.frame_pts,
             frames_processed: 0,
             buf: vec![0u8; frame_bytes],
@@ -67,13 +69,15 @@ impl FrameSource for FileSrc {
             )));
         }
 
-        let ts = self.start_time + Duration::from_secs_f64(self.frame_pts[self.frames_processed]);
+        let ts = self.start_ts + Duration::from_secs_f64(self.frame_pts[self.frames_processed]);
+        let wall =
+            self.start_time_wall + Duration::from_secs_f64(self.frame_pts[self.frames_processed]);
         self.frames_processed += 1;
 
-        let img = RgbaImage::from_raw(self.width, self.height, self.buf.clone())
+        let image = RgbaImage::from_raw(self.width, self.height, self.buf.clone())
             .ok_or_else(|| Error::Process("frame buffer size mismatch".into()))?;
 
-        Ok(Some(Frame { image: img, ts }))
+        Ok(Some(Frame { image, ts, wall }))
     }
 
     fn fps(&self) -> f64 {

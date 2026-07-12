@@ -1,6 +1,7 @@
 use image::RgbaImage;
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 use tracing::{instrument, trace};
+use vid::Frame;
 
 use crate::fit::FitMethod;
 use crate::metrics::{record_brightness, record_sequence_length, FrameDispositionGuard};
@@ -21,7 +22,7 @@ const MIN_CONTRAST_AVG_DEV: f64 = 0.01;
 pub struct AutoStitcher {
     config: Config,
     fit_method: FitMethod,
-    prev_ts: Option<SystemTime>,
+    prev_ts: Option<Instant>,
     prev_frame: Option<RgbaImage>,
     seq: Sequence,
     dx_abs_low_pass: f64,
@@ -68,14 +69,17 @@ impl AutoStitcher {
         (x as i32 - x_zero, cos)
     }
 
-    fn record(&mut self, prev_ts: SystemTime, frame: RgbaImage, dx: i32, ts: SystemTime) {
+    fn record(&mut self, prev_ts: Instant, img: RgbaImage, dx: i32, ts: Instant, wall: SystemTime) {
         if self.seq.start_ts.is_none() {
             self.seq.start_ts = Some(prev_ts);
         }
-        self.seq.frames.push(frame);
+        if self.seq.start_wall.is_none() {
+            self.seq.start_wall = Some(wall);
+        }
+        self.seq.images.push(img);
         self.seq.dx.push(dx);
         self.seq.ts.push(ts);
-        record_sequence_length(self.seq.frames.len());
+        record_sequence_length(self.seq.images.len());
     }
 
     /// Attempt to stitch any buffered sequence and reset state.
@@ -100,18 +104,18 @@ impl AutoStitcher {
     ///
     /// Returns a `Train` if a sequence ended with this frame.
     #[instrument(level = "trace", skip(frame))]
-    fn process_frame(
-        &mut self,
-        frame: &RgbaImage,
-        ts: SystemTime,
-    ) -> Result<Option<Train>, AutoStitcherError> {
+    fn process_frame(&mut self, frame: &Frame) -> Result<Option<Train>, AutoStitcherError> {
+        let ts = frame.ts;
+        let wall = frame.wall;
+        let img = &frame.image;
+
         let Some(prev_ts) = self.prev_ts else {
             return Ok(None);
         };
 
         let mut frame_disposition_guard = FrameDispositionGuard::new();
 
-        let frame_period_s = ts.duration_since(prev_ts).unwrap_or_default().as_secs_f64();
+        let frame_period_s = ts.duration_since(prev_ts).as_secs_f64();
         if frame_period_s < MIN_FRAME_PERIOD_S {
             frame_disposition_guard.disposition = "fast_frame";
             return Ok(None);
@@ -120,10 +124,10 @@ impl AutoStitcher {
         let min_dx = self.config.min_px_per_frame(frame_period_s);
         let max_dx = self.config.max_px_per_frame(frame_period_s);
 
-        if frame.width() < max_dx as u32 * 3 {
+        if img.width() < max_dx as u32 * 3 {
             tracing::warn!(
                 "frame too narrow for max speed: {}px < {}px",
-                frame.width(),
+                img.width(),
                 max_dx * 3
             );
             frame_disposition_guard.disposition = "slow_frame";
@@ -132,7 +136,7 @@ impl AutoStitcher {
 
         let is_active = !self.seq.is_empty();
 
-        let (avg_ch, avg_dev) = avg::rgba(frame);
+        let (avg_ch, avg_dev) = avg::rgba(img);
         let avg_mean = (avg_ch[0] + avg_ch[1] + avg_ch[2]) / 3.0;
         let avg_dev_mean = (avg_dev[0] + avg_dev[1] + avg_dev[2]) / 3.0;
         record_brightness(avg_mean, avg_dev_mean);
@@ -141,7 +145,7 @@ impl AutoStitcher {
             frame_disposition_guard.disposition = "low_contrast";
             if is_active {
                 let last_ts = *self.seq.ts.last().unwrap();
-                let elapsed = ts.duration_since(last_ts).unwrap_or_default().as_secs_f64();
+                let elapsed = ts.duration_since(last_ts).as_secs_f64();
                 if elapsed > MAX_FRAME_PERIOD_S {
                     return self.try_stitch_and_reset();
                 }
@@ -152,7 +156,7 @@ impl AutoStitcher {
         // Compute offset before any mutation of self (borrow-checker scope).
         let (dx, cos) = {
             let prev = self.prev_frame.as_ref().unwrap();
-            Self::find_offset(prev, frame, max_dx)
+            Self::find_offset(prev, img, max_dx)
         };
 
         trace!(dx, cos, is_active, "frame offset");
@@ -169,7 +173,7 @@ impl AutoStitcher {
                 return self.try_stitch_and_reset();
             }
 
-            self.record(prev_ts, frame.clone(), dx, ts);
+            self.record(prev_ts, img.clone(), dx, ts, wall);
             frame_disposition_guard.disposition = "recorded";
             return Ok(None);
         }
@@ -185,7 +189,7 @@ impl AutoStitcher {
             && dx.unsigned_abs() <= max_dx as u32
         {
             tracing::info!("start of new sequence");
-            self.record(prev_ts, frame.clone(), dx, ts);
+            self.record(prev_ts, img.clone(), dx, ts, wall);
             self.dx_abs_low_pass = dx.unsigned_abs() as f64;
             frame_disposition_guard.disposition = "recorded_new_sequence";
             return Ok(None);
@@ -200,14 +204,10 @@ impl AutoStitcher {
     ///
     /// Always updates the previous-frame state (even on early return), matching
     /// Go's deferred assignment.
-    pub fn frame(
-        &mut self,
-        frame: RgbaImage,
-        ts: SystemTime,
-    ) -> Result<Option<Train>, AutoStitcherError> {
-        let result = self.process_frame(&frame, ts);
-        self.prev_ts = Some(ts);
-        self.prev_frame = Some(frame);
+    pub fn frame(&mut self, frame: Frame) -> Result<Option<Train>, AutoStitcherError> {
+        let result = self.process_frame(&frame);
+        self.prev_ts = Some(frame.ts);
+        self.prev_frame = Some(frame.image);
         result
     }
 }
