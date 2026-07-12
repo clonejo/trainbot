@@ -11,7 +11,8 @@ pub struct FileSrc {
     height: u32,
     fps: f64,
     start_time: SystemTime,
-    frame_count: u64,
+    frame_pts: Vec<f64>,
+    frames_processed: usize,
     buf: Vec<u8>,
 }
 
@@ -38,7 +39,8 @@ impl FileSrc {
             height: info.height,
             fps: info.fps,
             start_time: info.start_time.unwrap_or(UNIX_EPOCH),
-            frame_count: 0,
+            frame_pts: info.frame_pts,
+            frames_processed: 0,
             buf: vec![0u8; frame_bytes],
         })
     }
@@ -55,6 +57,7 @@ impl FrameSource for FileSrc {
     fn next_frame(&mut self) -> Result<Option<Frame>> {
         let n = read_exact_or_eof(&mut self.reader, &mut self.buf).map_err(Error::Io)?;
         if n == 0 {
+            assert_eq!(self.frame_pts.len(), self.frames_processed);
             return Ok(None); // clean EOF
         }
         if n != self.buf.len() {
@@ -64,15 +67,8 @@ impl FrameSource for FileSrc {
             )));
         }
 
-        // Replicate Go's timestamp arithmetic exactly:
-        //   ts = startTS + time.Second * time.Duration(count) / time.Duration(fps)
-        // `time.Duration` is int64 nanoseconds, so `time.Duration(fps)` truncates
-        // the float fps to an integer (e.g. 29.833... → 29).  Using float division
-        // instead would make per-frame timestamps ~1 ms shorter, shifting fitted
-        // speeds ~2–3% high for videos with fractional fps (e.g. 179/6 ≈ 29.83).
-        let ts = self.start_time
-            + Duration::from_nanos(self.frame_count * 1_000_000_000 / self.fps as u64);
-        self.frame_count += 1;
+        let ts = self.start_time + Duration::from_secs_f64(self.frame_pts[self.frames_processed]);
+        self.frames_processed += 1;
 
         let img = RgbaImage::from_raw(self.width, self.height, self.buf.clone())
             .ok_or_else(|| Error::Process("frame buffer size mismatch".into()))?;

@@ -1,12 +1,16 @@
-use crate::{Error, Result};
+use std::time::SystemTime;
+
 use camino::Utf8Path;
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
-use std::time::SystemTime;
+use serde_this_or_that::as_f64;
+
+use crate::{Error, Result};
 
 #[derive(Debug, Deserialize)]
 struct ProbeOutput {
     streams: Vec<StreamJson>,
+    frames: Vec<Frame>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -23,11 +27,18 @@ struct TagsJson {
     creation_time: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+struct Frame {
+    #[serde(deserialize_with = "as_f64")]
+    best_effort_timestamp_time: f64,
+}
+
 pub struct VideoInfo {
     pub width: u32,
     pub height: u32,
     pub fps: f64,
     pub start_time: Option<SystemTime>,
+    pub frame_pts: Vec<f64>,
 }
 
 pub fn probe(path: &Utf8Path) -> Result<VideoInfo> {
@@ -37,6 +48,7 @@ pub fn probe(path: &Utf8Path) -> Result<VideoInfo> {
         "-v", "quiet",
         "-print_format", "json",
         "-show_streams",
+        "-show_entries", "frame=best_effort_timestamp_time",
         path
     )
     .stdout_capture()
@@ -73,11 +85,18 @@ pub fn probe(path: &Utf8Path) -> Result<VideoInfo> {
         .and_then(|s| s.parse::<DateTime<Utc>>().ok())
         .map(SystemTime::from);
 
+    let frame_pts = parsed
+        .frames
+        .iter()
+        .map(|f| f.best_effort_timestamp_time)
+        .collect();
+
     Ok(VideoInfo {
         width,
         height,
         fps,
         start_time,
+        frame_pts,
     })
 }
 
