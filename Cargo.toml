@@ -31,3 +31,9 @@ duct = "1.1.1"
 
 [profile.release]
 debug = "line-tables-only"
+
+# somehow, this makes frame to frame motion detection much slower:
+#panic = "abort"
+# somehow, this makes frame to frame motion detection much slower:
+#codegen-units = 1
+#lto = "fat"

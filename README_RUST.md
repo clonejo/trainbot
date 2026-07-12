@@ -41,6 +41,12 @@ RUSTFLAGS='-C target-feature=+crt-static' cargo build --release --target aarch64
 
 ## Performance testing
 
+### Grafana / Prometheus metrics
+
+- The Grafana dashboard tell you how well the BufSrc and AutoStitcher threads are coping with the load.
+
+### Profiling
+
 - install [samply](https://github.com/mstange/samply)
 - `cargo build --release`
 - `samply record target/release/trainbot -i internal/pkg/stitch/testdata/set0/day.mp4`

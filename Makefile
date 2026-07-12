@@ -180,6 +180,7 @@ rust_check:
 
 rust_build_arm64:
 	rustup target add aarch64-unknown-linux-gnu
+	# target-cpu=generic seems same or slightly faster compared to cortex-a72
 	RUSTFLAGS='-C target-feature=+crt-static -C linker=aarch64-linux-gnu-gcc' cargo build --release --target=aarch64-unknown-linux-gnu
 
 rust_perf:
