@@ -1,7 +1,7 @@
 use image::{Pixel, Rgba, RgbaImage};
 use thiserror::Error;
 
-use crate::fit::{fit_dx, FitDxError, FitMethod};
+use crate::fit::{FitDxError, FitMethod, fit_dx};
 use crate::gif::create_gif;
 use crate::metrics::record_fit_and_stitch_result;
 use crate::video::{self, create_video};

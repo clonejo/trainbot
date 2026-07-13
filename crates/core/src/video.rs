@@ -1,5 +1,5 @@
 use std::ffi::OsString;
-use std::io::{pipe, Read, Write};
+use std::io::{Read, Write, pipe};
 use std::time::SystemTimeError;
 
 use bytes::{BufMut, Bytes, BytesMut};

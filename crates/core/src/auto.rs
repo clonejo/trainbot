@@ -4,8 +4,8 @@ use tracing::{instrument, trace};
 use vid::Frame;
 
 use crate::fit::FitMethod;
-use crate::metrics::{record_brightness, record_sequence_length, FrameDispositionGuard};
-use crate::stitch::{fit_and_stitch, FitAndStitchError};
+use crate::metrics::{FrameDispositionGuard, record_brightness, record_sequence_length};
+use crate::stitch::{FitAndStitchError, fit_and_stitch};
 use crate::{Config, Sequence, Train};
 
 const GOOD_COS_SCORE_NO_MOVE: f64 = 0.99;

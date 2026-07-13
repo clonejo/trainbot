@@ -42,7 +42,7 @@ fn test_masked_stitch() -> Result<()> {
                 break stitcher
                     .try_stitch_and_reset()
                     .unwrap()
-                    .unwrap_or_else(|| panic!("{name}: no train found"))
+                    .unwrap_or_else(|| panic!("{name}: no train found"));
             }
             Err(e) => panic!("{name}: frame error: {e}"),
         }
