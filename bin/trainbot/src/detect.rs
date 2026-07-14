@@ -1,5 +1,5 @@
 use std::str::FromStr as _;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use anyhow::Context;
 use camino::Utf8PathBuf;
@@ -13,7 +13,7 @@ use store::{DataStore, queries};
 use trainbot_core::{
     AutoStitcher, AutoStitcherError, Config, Train, VIDEO_EXTENSION, init_logging, init_metrics,
 };
-use vid::{FourCC, FrameSource};
+use vid::{ConstantFrameTime, FourCC, FrameSource};
 
 use crate::args::DetectArgs;
 
@@ -88,14 +88,9 @@ pub fn run(argv: Vec<String>) {
     let mut stitcher = AutoStitcher::new(config, args.fit_method);
     let mut failed_frames: usize = 0;
 
-    let mut next_frame_ts = Instant::now();
     loop {
         match src.next_frame() {
             Ok(Some(mut frame)) => {
-                if let Some(dt) = args.constant_frame_time_micros {
-                    frame.ts = next_frame_ts;
-                    next_frame_ts += Duration::from_micros(dt);
-                }
                 failed_frames = 0;
                 if let Some((x, y, w, h)) = crop {
                     frame.image = image::imageops::crop_imm(&frame.image, x, y, w, h).to_image()
@@ -129,47 +124,59 @@ pub fn run(argv: Vec<String>) {
 }
 
 fn open_source(args: &DetectArgs, fourcc: FourCC) -> anyhow::Result<Box<dyn FrameSource>> {
-    if args.input.starts_with("http://") || args.input.starts_with("https://") {
-        let src = vid::MjpegHttpSrc::open(&args.input).context("open MjpegHttpSrc")?;
-        return Ok(Box::new(vid::BufSrc::new(src, args.src_buf_cap)));
+    let mut src: Box<dyn FrameSource + Send> =
+        if args.input.starts_with("http://") || args.input.starts_with("https://") {
+            Box::new(vid::MjpegHttpSrc::open(&args.input).context("open MjpegHttpSrc")?)
+        } else if args.input == "picam3" {
+            Box::new(
+                vid::PiCam3Src::open(vid::PiCam3Config {
+                    roi_x: args.rect_x,
+                    roi_y: args.rect_y,
+                    width: args.rect_w,
+                    height: args.rect_h,
+                    focus: 0.0,
+                    rotate_180: args.rotate_180,
+                    format: fourcc,
+                    fps: args.fps,
+                })
+                .context("open PiCam3")?,
+            )
+        } else if is_cam_src(&args.input)? {
+            Box::new(
+                vid::CamSrc::open(vid::CamConfig {
+                    device: args.input.clone(),
+                    fourcc,
+                    width: args.camera_w,
+                    height: args.camera_h,
+                })
+                .context("open CamSrc")?,
+            )
+        } else {
+            let path = Utf8PathBuf::from_str(&args.input).expect("--input path must be UTF-8");
+            Box::new(vid::FileSrc::open(path.as_path()).context("open FileSrc")?)
+        };
+
+    if let Some(dt) = args.constant_frame_time_micros {
+        let duration = Duration::from_micros(dt);
+        src = Box::new(ConstantFrameTime::new(src, duration))
     }
 
-    if args.input == "picam3" {
-        let src = vid::PiCam3Src::open(vid::PiCam3Config {
-            roi_x: args.rect_x,
-            roi_y: args.rect_y,
-            width: args.rect_w,
-            height: args.rect_h,
-            focus: 0.0,
-            rotate_180: args.rotate_180,
-            format: fourcc,
-            fps: args.fps,
-        })
-        .context("open PiCam3")?;
-        return Ok(Box::new(vid::BufSrc::new(src, args.src_buf_cap)));
+    if src.is_live() {
+        src = Box::new(vid::BufSrc::new(src, args.src_buf_cap));
     }
-
+    Ok(src)
+}
+fn is_cam_src(input: &str) -> anyhow::Result<bool> {
     #[cfg(target_os = "linux")]
     {
         use std::os::unix::fs::FileTypeExt;
-        if let Ok(meta) = std::fs::metadata(&args.input)
-            && meta.file_type().is_char_device()
-        {
-            let src = vid::CamSrc::open(vid::CamConfig {
-                device: args.input.clone(),
-                fourcc,
-                width: args.camera_w,
-                height: args.camera_h,
-            })
-            .context("open CamSrc")?;
-            return Ok(Box::new(vid::BufSrc::new(src, args.src_buf_cap)));
-        }
+        let meta = std::fs::metadata(input)?;
+        Ok(meta.file_type().is_char_device())
     }
-
-    let path = Utf8PathBuf::from_str(&args.input).expect("--input path must be UTF-8");
-    Ok(Box::new(
-        vid::FileSrc::open(path.as_path()).context("open FileSrc")?,
-    ))
+    #[cfg(not(target_os = "linux"))]
+    {
+        Ok(false)
+    }
 }
 
 fn save_train(train: &Train, ds: &DataStore, conn: &Connection) -> anyhow::Result<()> {

@@ -1,4 +1,5 @@
 mod buf;
+mod constant_frame_time;
 mod convert;
 mod fcc;
 mod ffprobe;
@@ -11,6 +12,7 @@ mod picam3;
 mod cam;
 
 pub use buf::BufSrc;
+pub use constant_frame_time::ConstantFrameTime;
 pub use fcc::FourCC;
 pub use file::FileSrc;
 pub use jpeg_scan::JpegScanner;

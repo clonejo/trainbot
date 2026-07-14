@@ -11,7 +11,7 @@ pub struct BufSrc {
 }
 
 impl BufSrc {
-    pub fn new<S: FrameSource + Send + 'static>(mut src: S, cap: usize) -> Self {
+    pub fn new(mut src: Box<dyn FrameSource + Send>, cap: usize) -> Self {
         assert!(src.is_live(), "BufSrc only wraps live sources");
         let fps = src.fps();
         let (tx, rx) = bounded(cap);
