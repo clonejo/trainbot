@@ -3,6 +3,9 @@ name = "trainbot-core"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+debug-fit = ["dep:plotters"]
+
 [dependencies]
 pmatch = { path = "../cv/pmatch" }
 avg = { path = "../cv/avg" }
@@ -31,6 +34,7 @@ clap = { workspace = true }
 scopeguard = "1.2.0"
 camino-tempfile = "1.4.1"
 camino.workspace = true
+plotters = { version = "0.3.7", optional = true }
 
 [dev-dependencies]
 testdata = { path = "../testdata" }

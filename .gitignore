@@ -13,5 +13,7 @@
 /internal/pkg/stitch/testdata/set1
 /internal/pkg/stitch/testdata/set2
 
+fit_dx.png
+
 # Rust
 /target

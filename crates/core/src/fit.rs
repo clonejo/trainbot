@@ -38,6 +38,226 @@ pub enum FitMethod {
     Ransac,
 }
 
+/// Fit a constant-acceleration model to the sequence and return smoothed integer dx values.
+///
+/// Returns `(dx_fit, ds, v0, a)`:
+/// - `dx_fit` – fitted per-frame pixel displacements (same length as `seq.dx`)
+/// - `ds`     – estimated total displacement [px], always positive
+/// - `v0`     – velocity at t=0 [px/s] (t measured from `seq.start_ts`)
+/// - `a`      – acceleration [px/s²]
+///
+/// Both methods use the same hyper-parameters as Go's RANSAC:
+/// threshold = 5% of max speed, min_inliers = n/2.
+/// See `FitMethod` for per-method deviation notes.
+pub(crate) fn fit_dx(
+    seq: &Sequence,
+    max_speed_px_s: f64,
+    method: FitMethod,
+) -> Result<(Vec<i32>, f64, f64, f64), FitDxError> {
+    let mut debug_plot = debug_plot::DebugPlot::new(seq);
+
+    let n = seq.dx.len();
+    if n < 9 {
+        return Err(FitDxError::TooShort { n });
+    }
+
+    let start_ts = seq.start_ts.expect("start_ts must be set before fit_dx");
+
+    // FIXME: rewrite this with iterators and zip/unzip
+    // dt_complete[i] = seconds since previous frame (or startTS for i=0).
+    // t_complete[i]  = seconds since startTS, only set for non-zero dx frames.
+    let mut dt_complete = vec![0.0f64; n];
+    let mut t_complete = vec![0.0f64; n]; // 0-initialized; zero-dx frames stay 0
+
+    let mut t_fit: Vec<f64> = Vec::with_capacity(n);
+    let mut v_fit: Vec<f64> = Vec::with_capacity(n);
+
+    for i in 0..n {
+        let dt_c = if i == 0 {
+            seq.ts[i].duration_since(start_ts).as_secs_f64()
+        } else {
+            seq.ts[i].duration_since(seq.ts[i - 1]).as_secs_f64()
+        };
+        dt_complete[i] = dt_c;
+
+        if seq.dx[i] == 0 {
+            continue;
+        }
+
+        let t_i = seq.ts[i].duration_since(start_ts).as_secs_f64();
+        t_complete[i] = t_i;
+        t_fit.push(t_i);
+        v_fit.push(seq.dx[i] as f64 / dt_c);
+    }
+
+    let threshold = max_speed_px_s * 0.05;
+    let min_inliers = v_fit.len() / 2;
+
+    // FIXME: switch from Vec to some more useful type, maybe Fit<const N> {[f64; N]}
+    let fit: Vec<f64> = match method {
+        FitMethod::Ols => fit_linear_robust(&t_fit, &v_fit, threshold, min_inliers)?.to_vec(),
+        FitMethod::Ransac => ransac::ransac(
+            &t_fit,
+            &v_fit,
+            |t, p| p[0] + p[1] * t,
+            2,
+            ransac::MetaParams {
+                min_model_points: 3,
+                max_iter: 25,
+                min_inliers,
+                inlier_threshold: threshold,
+                seed: 0,
+            },
+        )?,
+    };
+
+    // Regenerate integer dx from the fitted model, accumulating and
+    // redistributing rounding error to keep the sum consistent.
+    let mut dx_fit = vec![0i32; n];
+    let mut round_err = 0.0f64;
+    for i in 0..n {
+        let dx_f = (fit[0] + fit[1] * t_complete[i]) * dt_complete[i];
+        let mut dx_round = dx_f.round();
+        round_err += dx_f - dx_round;
+        if round_err.abs() >= 0.5 {
+            dx_round += round_err;
+            round_err -= round_err.signum();
+        }
+        dx_fit[i] = dx_round as i32;
+    }
+
+    let v0 = fit[0];
+    let a = fit[1];
+    let t_last = *t_fit.last().expect("at least one non-zero dx");
+    let ds = (v0 * t_last + 0.5 * a * t_last * t_last).abs();
+
+    debug_plot.add_fit(seq, dt_complete, t_complete, fit, &dx_fit);
+
+    Ok((dx_fit, ds, v0, a))
+}
+
+#[cfg(not(feature = "debug-fit"))]
+/// just a stub without feature "debug-fit"
+mod debug_plot {
+    use crate::sequence::Sequence;
+
+    pub(crate) struct DebugPlot {}
+    impl DebugPlot {
+        pub(crate) fn new(_: &Sequence) -> DebugPlot {
+            DebugPlot {}
+        }
+        pub(crate) fn add_fit(
+            &mut self,
+            _: &Sequence,
+            _: Vec<f64>,
+            _: Vec<f64>,
+            _: Vec<f64>,
+            _: &Vec<i32>,
+        ) {
+        }
+    }
+}
+#[cfg(feature = "debug-fit")]
+mod debug_plot {
+    use plotters::{coord::types::RangedCoordf64, prelude::*};
+
+    use crate::sequence::Sequence;
+
+    pub(crate) struct DebugPlot<'a> {
+        first_ts: std::time::Instant,
+        ctx: ChartContext<'a, BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+    }
+    impl DebugPlot<'_> {
+        pub(crate) fn new(seq: &Sequence) -> DebugPlot<'_> {
+            let root_area = BitMapBackend::new("fit_dx.png", (800, 600)).into_drawing_area();
+            root_area.fill(&WHITE).unwrap();
+            let first_ts = *seq.ts.first().unwrap();
+            let mut ctx = ChartBuilder::on(&root_area)
+                .set_label_area_size(LabelAreaPosition::Left, 40)
+                .set_label_area_size(LabelAreaPosition::Bottom, 40)
+                .caption("fit_dx()", ("sans-serif", 40))
+                .build_cartesian_2d(
+                    0.0..seq
+                        .ts
+                        .last()
+                        .unwrap()
+                        .duration_since(first_ts)
+                        .as_secs_f64()
+                        .ceil(),
+                    f64::from(*seq.dx.iter().min().unwrap())
+                        ..f64::from(*seq.dx.iter().max().unwrap()),
+                )
+                .unwrap();
+
+            ctx.configure_mesh().draw().unwrap();
+
+            ctx.draw_series(seq.ts.iter().zip(&seq.dx).map(|(ts, dx)| {
+                Cross::new(
+                    (ts.duration_since(first_ts).as_secs_f64(), f64::from(*dx)),
+                    1,
+                    BLACK,
+                )
+            }))
+            .unwrap()
+            .label("recorded (dx)")
+            .legend(|(x, y)| Cross::new((x + 10, y), 1, BLACK));
+
+            DebugPlot { first_ts, ctx }
+        }
+        pub(crate) fn add_fit(
+            &mut self,
+            seq: &Sequence,
+            dt_complete: Vec<f64>,
+            t_complete: Vec<f64>,
+            fit: Vec<f64>,
+            dx_fit: &Vec<i32>,
+        ) {
+            // fit function
+            self.ctx
+                .draw_series(LineSeries::new(
+                    vec![
+                        (
+                            t_complete[0],
+                            (fit[0] + fit[1] * t_complete[0]) * dt_complete[0],
+                        ),
+                        (
+                            *t_complete.last().unwrap(),
+                            (fit[0] + fit[1] * t_complete.last().unwrap())
+                                * dt_complete.last().unwrap(),
+                        ),
+                    ],
+                    &GREEN,
+                ))
+                .unwrap()
+                .label("fitted (fit)")
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], GREEN));
+
+            // fit function integer quantized
+            self.ctx
+                .draw_series(seq.ts.iter().zip(dx_fit).map(|(ts, dx)| {
+                    Circle::new(
+                        (
+                            ts.duration_since(self.first_ts).as_secs_f64(),
+                            f64::from(*dx),
+                        ),
+                        3,
+                        RED.mix(0.4),
+                    )
+                }))
+                .unwrap()
+                .label("fitted as int (dx_fit)")
+                .legend(|(x, y)| Circle::new((x + 10, y), 3, RED));
+
+            self.ctx
+                .configure_series_labels()
+                .border_style(BLACK)
+                .background_style(WHITE.mix(0.8))
+                .draw()
+                .unwrap();
+        }
+    }
+}
+
 /// Ordinary least squares for the linear model v(t) = v0 + a*t.
 /// Returns `[v0, a]` or `None` if degenerate.
 fn ols_linear(t: &[f64], v: &[f64]) -> Option<[f64; 2]> {
@@ -100,96 +320,4 @@ fn fit_linear_robust(
     }
 
     Ok(params)
-}
-
-/// Fit a constant-acceleration model to the sequence and return smoothed integer dx values.
-///
-/// Returns `(dx_fit, ds, v0, a)`:
-/// - `dx_fit` – fitted per-frame pixel displacements (same length as `seq.dx`)
-/// - `ds`     – estimated total displacement [px], always positive
-/// - `v0`     – velocity at t=0 [px/s] (t measured from `seq.start_ts`)
-/// - `a`      – acceleration [px/s²]
-///
-/// Both methods use the same hyper-parameters as Go's RANSAC:
-/// threshold = 5% of max speed, min_inliers = n/2.
-/// See `FitMethod` for per-method deviation notes.
-pub(crate) fn fit_dx(
-    seq: &Sequence,
-    max_speed_px_s: f64,
-    method: FitMethod,
-) -> Result<(Vec<i32>, f64, f64, f64), FitDxError> {
-    let n = seq.dx.len();
-    if n < 9 {
-        return Err(FitDxError::TooShort { n });
-    }
-
-    let start_ts = seq.start_ts.expect("start_ts must be set before fit_dx");
-
-    // dt_complete[i] = seconds since previous frame (or startTS for i=0).
-    // t_complete[i]  = seconds since startTS, only set for non-zero dx frames.
-    let mut dt_complete = vec![0.0f64; n];
-    let mut t_complete = vec![0.0f64; n]; // 0-initialized; zero-dx frames stay 0
-
-    let mut t_fit: Vec<f64> = Vec::with_capacity(n);
-    let mut v_fit: Vec<f64> = Vec::with_capacity(n);
-
-    for i in 0..n {
-        let dt_c = if i == 0 {
-            seq.ts[i].duration_since(start_ts).as_secs_f64()
-        } else {
-            seq.ts[i].duration_since(seq.ts[i - 1]).as_secs_f64()
-        };
-        dt_complete[i] = dt_c;
-
-        if seq.dx[i] == 0 {
-            continue;
-        }
-
-        let t_i = seq.ts[i].duration_since(start_ts).as_secs_f64();
-        t_complete[i] = t_i;
-        t_fit.push(t_i);
-        v_fit.push(seq.dx[i] as f64 / dt_c);
-    }
-
-    let threshold = max_speed_px_s * 0.05;
-    let min_inliers = v_fit.len() / 2;
-
-    let fit: Vec<f64> = match method {
-        FitMethod::Ols => fit_linear_robust(&t_fit, &v_fit, threshold, min_inliers)?.to_vec(),
-        FitMethod::Ransac => ransac::ransac(
-            &t_fit,
-            &v_fit,
-            |t, p| p[0] + p[1] * t,
-            2,
-            ransac::MetaParams {
-                min_model_points: 3,
-                max_iter: 25,
-                min_inliers,
-                inlier_threshold: threshold,
-                seed: 0,
-            },
-        )?,
-    };
-
-    // Regenerate integer dx from the fitted model, accumulating and
-    // redistributing rounding error to keep the sum consistent.
-    let mut dx_fit = vec![0i32; n];
-    let mut round_err = 0.0f64;
-    for i in 0..n {
-        let dx_f = (fit[0] + fit[1] * t_complete[i]) * dt_complete[i];
-        let mut dx_round = dx_f.round();
-        round_err += dx_f - dx_round;
-        if round_err.abs() >= 0.5 {
-            dx_round += round_err;
-            round_err -= round_err.signum();
-        }
-        dx_fit[i] = dx_round as i32;
-    }
-
-    let v0 = fit[0];
-    let a = fit[1];
-    let t_last = *t_fit.last().expect("at least one non-zero dx");
-    let ds = (v0 * t_last + 0.5 * a * t_last * t_last).abs();
-
-    Ok((dx_fit, ds, v0, a))
 }
