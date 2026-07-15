@@ -13,7 +13,6 @@ pub struct Train {
     pub accel_px_s2: f64,
     pub conf: Config,
     pub image: RgbaImage,
-    pub gif_data: Vec<u8>,
     pub video_data: Vec<u8>,
 }
 

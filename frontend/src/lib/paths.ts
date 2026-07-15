@@ -15,8 +15,8 @@ export function imgFileName(ts: DateTime): string {
   return `train_${formatFileTs(ts)}.jpg`
 }
 
-export function gifFileName(ts: DateTime): string {
-  return `train_${formatFileTs(ts)}.gif`
+export function mp4FileName(ts: DateTime): string {
+  return `train_${formatFileTs(ts)}.mp4`
 }
 
 export function getBlobURL(blobName: string): string {

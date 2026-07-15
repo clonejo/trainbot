@@ -5,8 +5,11 @@ edition = "2024"
 
 [dependencies]
 camino = { workspace = true }
-image = { workspace = true, features = ["jpeg", "png", "gif"] }
+image = { workspace = true, features = ["jpeg", "png"] }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+image = { version = "0.25", default-features = false, features = [
+  "jpeg",
+  "png",
+] }

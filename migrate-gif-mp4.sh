@@ -15,6 +15,14 @@ for old in "${gifs[@]}"; do
 
 	if [[ -e "$new" ]]; then
 		echo >&2 "skipping $old"
+
+		#if ffmpeg -loglevel repeat+level+warning -i "$new" -f mp4 -codec copy /dev/null -y; then
+		#	echo >&2 "deleting $old"
+		#	rm "$old"
+		#else
+		#	echo >&2 "$old corrupt??"
+		#fi
+
 		continue
 	fi
 

@@ -15,8 +15,8 @@ impl Train {
         self.file_name("jpg")
     }
 
-    pub fn gif_file_name(&self) -> String {
-        self.file_name("gif")
+    pub fn mp4_file_name(&self) -> String {
+        self.file_name("mp4")
     }
 
     pub fn file_name(&self, extension: &str) -> String {
@@ -104,7 +104,7 @@ pub fn set_cleaned_up(conn: &Connection, id: i64) -> SqlResult<()> {
     Ok(())
 }
 
-/// Return a set of all known blob filenames (image + gif, no thumbnails).
+/// Return a set of all known blob filenames (image + clip, no thumbnails).
 pub fn get_all_blobs(conn: &Connection) -> SqlResult<std::collections::HashSet<String>> {
     let mut stmt = conn.prepare_cached("SELECT id, start_ts FROM trains_v2")?;
     let mut out = std::collections::HashSet::new();
@@ -112,7 +112,7 @@ pub fn get_all_blobs(conn: &Connection) -> SqlResult<std::collections::HashSet<S
     for row in rows {
         let t = row?;
         out.insert(t.img_file_name());
-        out.insert(t.gif_file_name());
+        out.insert(t.mp4_file_name());
     }
     Ok(out)
 }
@@ -148,7 +148,7 @@ mod tests {
             start_ts: parse("2023-12-24T09:58:52.660009478Z"),
         };
         assert_eq!(t.img_file_name(), "train_20231224_095852.66_Z.jpg");
-        assert_eq!(t.gif_file_name(), "train_20231224_095852.66_Z.gif");
+        assert_eq!(t.mp4_file_name(), "train_20231224_095852.66_Z.mp4");
 
         let t2 = Train {
             id: 2,
@@ -239,7 +239,7 @@ mod tests {
         let blobs = super::get_all_blobs(&conn).unwrap();
         assert_eq!(blobs.len(), 4);
         assert!(blobs.contains("train_20230610_162058.805_+02:00.jpg"));
-        assert!(blobs.contains("train_20230610_162058.805_+02:00.gif"));
+        assert!(blobs.contains("train_20230610_162058.805_+02:00.mp4"));
     }
 
     #[test]

@@ -1,7 +1,6 @@
 mod auto;
 mod config;
 mod fit;
-mod gif;
 pub mod log;
 pub mod metrics;
 mod sequence;

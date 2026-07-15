@@ -2,7 +2,6 @@ use image::{Pixel, Rgba, RgbaImage};
 use thiserror::Error;
 
 use crate::fit::{FitDxError, FitMethod, fit_dx};
-use crate::gif::create_gif;
 use crate::metrics::record_fit_and_stitch_result;
 use crate::video::{self, create_video};
 use crate::{Config, Sequence, Train};
@@ -132,7 +131,7 @@ fn composite(dst: &mut RgbaImage, frame: &RgbaImage, mask: Option<&RgbaImage>, x
     }
 }
 
-/// Fit the constant-acceleration model, validate, stitch frames, and create GIF.
+/// Fit the constant-acceleration model, validate, stitch frames, and create video clip.
 ///
 /// Modifies `seq` in-place (strips trailing zero-dx entries).
 /// Returns `Err` with a descriptive message if the sequence is rejected.
@@ -190,7 +189,6 @@ pub(crate) fn fit_and_stitch(
         record_fit_and_stitch_result("unable_to_assemble_image");
         FitAndStitchError::from(e)
     })?;
-    let gif_data = create_gif(&seq, &img);
     let video_data = create_video(&seq, config.video_encoder)?;
     record_fit_and_stitch_result("success");
 
@@ -203,7 +201,6 @@ pub(crate) fn fit_and_stitch(
         accel_px_s2: -a,
         conf: config.clone(),
         image: img,
-        gif_data,
         video_data,
     })
 }

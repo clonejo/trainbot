@@ -189,12 +189,10 @@ fn save_train(train: &Train, ds: &DataStore, conn: &Connection) -> anyhow::Resul
         start_ts: dt_fixed,
     };
     let img_name = row.img_file_name();
-    let gif_name = row.gif_file_name();
     let video_name = row.file_name(VIDEO_EXTENSION);
 
     let img_path = ds.blob_path(&img_name);
     let thumb_path = ds.blob_thumb_path(&img_name);
-    let gif_path = ds.blob_path(&gif_name);
     let video_path = ds.blob_path(&video_name);
 
     // Resize to JPEG-safe dimensions
@@ -210,7 +208,6 @@ fn save_train(train: &Train, ds: &DataStore, conn: &Connection) -> anyhow::Resul
     let thumb = dyn_img.thumbnail(MAX_JPEG_DIM, 64);
     imutil::save_jpeg(&thumb_path, &thumb, 75).with_context(|| format!("save thumb {img_name}"))?;
 
-    std::fs::write(&gif_path, &train.gif_data).with_context(|| format!("save gif {gif_name}"))?;
     std::fs::write(&video_path, &train.video_data)
         .with_context(|| format!("save video {video_name}"))?;
 

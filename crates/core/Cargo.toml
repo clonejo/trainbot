@@ -24,8 +24,6 @@ tracing-subscriber = { version = "0.3", features = [
 ] }
 metrics = "0.24"
 metrics-exporter-prometheus = { version = "0.16", default-features = false }
-gif = "0.13"
-color_quant = "1.1"
 crossbeam-channel = "0.5"
 duct = { workspace = true }
 mkv-element = "0.4.0"

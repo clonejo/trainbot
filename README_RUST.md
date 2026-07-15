@@ -37,7 +37,12 @@ RUSTFLAGS='-C target-feature=+crt-static' cargo build --release --target aarch64
 
 (sorted new to old)
 
+- WIP GIFs are no longer generated, instead we generate H264-encoded MP4s. The `ffmpeg` executable is now a runtime dependency. The frontends will only display MP4s. Migrate your old `data/blobs` using [`migrate-gif-mp4.sh`](./migrate-gif-mp4.sh). You can delete the old GIFs.
 - Migration to Rust. New build requirements. (S)FTP upload feature has been dropped, as i was not using it. I am open for contributions to reimplement it.
+
+## Contributions
+
+`make rust_check` must pass
 
 ## Performance testing
 

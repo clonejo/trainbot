@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { inject, computed } from 'vue'
 import { dbKey, getTrain, queryOne } from '@/lib/db'
-import { getBlobURL, imgFileName, gifFileName } from '@/lib/paths'
+import { getBlobThumbURL, getBlobURL, imgFileName, mp4FileName } from '@/lib/paths'
 import type SqlJs from 'sql.js'
 import { useRouter } from 'vue-router'
 import RelativeTime from '@/components/RelativeTime.vue'
@@ -114,10 +114,26 @@ const prevId = computed(
     </a>
 
     <v-divider class="mx-4 mb-1"></v-divider>
-    <v-card-title>GIF</v-card-title>
+    <v-card-title>Video</v-card-title>
 
-    <a :href="getBlobURL(gifFileName(train.start_ts))" target="_blank">
-      <v-img width="10em" :src="getBlobURL(gifFileName(train.start_ts))"></v-img>
-    </a>
+    <video
+      :src="getBlobURL(mp4FileName(train.start_ts))"
+      :poster="getBlobThumbURL(imgFileName(train.start_ts))"
+      class="detail-video"
+      autoplay
+      muted
+      loop
+      controls
+      playsinline
+    ></video>
   </v-card>
 </template>
+
+<style scoped>
+.detail-video {
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+  margin: 0 auto;
+}
+</style>
