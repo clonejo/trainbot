@@ -2671,7 +2671,6 @@ dependencies = [
  "camino",
  "camino-tempfile",
  "clap",
- "crossbeam-channel",
  "duct",
  "image 0.25.10",
  "image-compare",
