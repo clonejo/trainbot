@@ -1,7 +1,7 @@
 use image::{Pixel, Rgba, RgbaImage};
 use thiserror::Error;
 
-use crate::fit::{FitDxError, FitMethod, fit_dx};
+use crate::fit::{FitDx, FitDxError, FitMethod, fit_dx};
 use crate::metrics::record_fit_and_stitch_result;
 use crate::video::{self, create_video};
 use crate::{Config, Sequence, Train};
@@ -148,17 +148,18 @@ pub(crate) fn fit_and_stitch(
     }
     // max_px_per_frame(1) = max pixels/frame at 1 fps = max speed in px/s.
     let max_speed_px_s = config.max_px_per_frame(1.0) as f64;
-    let (dx_fit, ds, v0, a) = fit_dx(&seq, max_speed_px_s, method).map_err(|fit_dx_error| {
-        record_fit_and_stitch_result("unable_to_fit");
-        let video_data = match fit_dx_error {
-            FitDxError::TooShort { .. } => None,
-            _ => create_video(&seq, config.video_encoder).ok(),
-        };
-        FitAndStitchError::UnableToFit {
-            fit_dx_error,
-            video_data,
-        }
-    })?;
+    let FitDx { dx_fit, ds, v0, a } =
+        fit_dx(&seq, max_speed_px_s, method).map_err(|fit_dx_error| {
+            record_fit_and_stitch_result("unable_to_fit");
+            let video_data = match fit_dx_error {
+                FitDxError::TooShort { .. } => None,
+                _ => create_video(&seq, config.video_encoder).ok(),
+            };
+            FitAndStitchError::UnableToFit {
+                fit_dx_error,
+                video_data,
+            }
+        })?;
 
     if ds < config.min_length_px() {
         record_fit_and_stitch_result("too_short");

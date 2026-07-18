@@ -38,13 +38,18 @@ pub enum FitMethod {
     Ransac,
 }
 
+pub struct FitDx {
+    /// fitted per-frame pixel displacements (same length as `seq.dx`)
+    pub dx_fit: Vec<i32>,
+    /// estimated total displacement [px], always positive
+    pub ds: f64,
+    /// velocity at t=0 [px/s] (t measured from `seq.start_ts`)
+    pub v0: f64,
+    /// acceleration [px/s²]
+    pub a: f64,
+}
+
 /// Fit a constant-acceleration model to the sequence and return smoothed integer dx values.
-///
-/// Returns `(dx_fit, ds, v0, a)`:
-/// - `dx_fit` – fitted per-frame pixel displacements (same length as `seq.dx`)
-/// - `ds`     – estimated total displacement [px], always positive
-/// - `v0`     – velocity at t=0 [px/s] (t measured from `seq.start_ts`)
-/// - `a`      – acceleration [px/s²]
 ///
 /// Both methods use the same hyper-parameters as Go's RANSAC:
 /// threshold = 5% of max speed, min_inliers = n/2.
@@ -53,7 +58,7 @@ pub(crate) fn fit_dx(
     seq: &Sequence,
     max_speed_px_s: f64,
     method: FitMethod,
-) -> Result<(Vec<i32>, f64, f64, f64), FitDxError> {
+) -> Result<FitDx, FitDxError> {
     let mut debug_plot = debug_plot::DebugPlot::new(seq);
 
     let n = seq.dx.len();
@@ -133,7 +138,7 @@ pub(crate) fn fit_dx(
 
     debug_plot.add_fit(seq, dt_complete, t_complete, fit, &dx_fit);
 
-    Ok((dx_fit, ds, v0, a))
+    Ok(FitDx { dx_fit, ds, v0, a })
 }
 
 #[cfg(not(feature = "debug-fit"))]
