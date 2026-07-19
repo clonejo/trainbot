@@ -52,15 +52,14 @@ pub(crate) fn stitch(
     let fw = frames[0].width() as i32;
     let fh = frames[0].height() as i32;
 
-    let sign = dx[0].signum();
-    let mut w = fw * sign;
-    for &x in &dx[1..] {
-        if x != 0 && x.signum() != sign {
-            // FIXME: this should not trigger when dx[0] is 0.
-            return Err(StitchError::InconsistentSign);
-        }
-        w += x;
-    }
+    let sign = if dx.iter().filter(|dx| **dx != 0).all(|dx| dx.signum() == -1) {
+        -1
+    } else if dx.iter().filter(|dx| **dx != 0).all(|dx| dx.signum() == 1) {
+        1
+    } else {
+        return Err(StitchError::InconsistentSign);
+    };
+    let w: i32 = fw * sign + dx.iter().sum::<i32>();
 
     let img_w = w.unsigned_abs();
     let img_h = fh as u32;
