@@ -56,6 +56,7 @@ pub(crate) fn stitch(
     let mut w = fw * sign;
     for &x in &dx[1..] {
         if x != 0 && x.signum() != sign {
+            // FIXME: this should not trigger when dx[0] is 0.
             return Err(StitchError::InconsistentSign);
         }
         w += x;

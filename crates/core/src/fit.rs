@@ -117,24 +117,19 @@ pub(crate) fn fit_dx(
         )?,
     };
 
-    // Regenerate integer dx from the fitted model, accumulating and
-    // redistributing rounding error to keep the sum consistent.
-    let mut dx_fit = vec![0i32; n];
-    let mut round_err = 0.0f64;
-    for i in 0..n {
-        let dx_f = (fit[0] + fit[1] * t_complete[i]) * dt_complete[i];
-        let mut dx_round = dx_f.round();
-        round_err += dx_f - dx_round;
-        if round_err.abs() >= 0.5 {
-            dx_round += round_err;
-            round_err -= round_err.signum();
-        }
-        dx_fit[i] = dx_round as i32;
+    let v0 = fit[0];
+    let a = fit[1];
+
+    // Regenerate integer dx from fitted model:
+    let mut dx_fit: Vec<i32> = Vec::with_capacity(n);
+    let mut prev_x = 0;
+    for t in t_complete.iter() {
+        let x_fit = (v0 * t + a * t * t / 2.0).round() as i32;
+        dx_fit.push(x_fit - prev_x);
+        prev_x = x_fit;
     }
     debug_plot.add_fit(seq, &dt_complete, &t_complete, &fit, &dx_fit);
 
-    let v0 = fit[0];
-    let a = fit[1];
     let t_last = *t_fit.last().expect("at least one non-zero dx");
     let ds = (v0 * t_last + 0.5 * a * t_last * t_last).abs();
 
