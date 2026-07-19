@@ -71,8 +71,8 @@ pub(crate) fn fit_dx(
     // FIXME: rewrite this with iterators and zip/unzip
     // dt_complete[i] = seconds since previous frame (or startTS for i=0).
     // t_complete[i]  = seconds since startTS, only set for non-zero dx frames.
-    let mut dt_complete = vec![0.0f64; n];
-    let mut t_complete = vec![0.0f64; n]; // 0-initialized; zero-dx frames stay 0
+    let mut dt_complete = Vec::with_capacity(n);
+    let mut t_complete = Vec::with_capacity(n);
 
     let mut t_fit: Vec<f64> = Vec::with_capacity(n);
     let mut v_fit: Vec<f64> = Vec::with_capacity(n);
@@ -83,14 +83,15 @@ pub(crate) fn fit_dx(
         } else {
             seq.ts[i].duration_since(seq.ts[i - 1]).as_secs_f64()
         };
-        dt_complete[i] = dt_c;
+        dt_complete.push(dt_c);
+
+        let t_i = seq.ts[i].duration_since(start_ts).as_secs_f64();
+        t_complete.push(t_i);
 
         if seq.dx[i] == 0 {
             continue;
         }
 
-        let t_i = seq.ts[i].duration_since(start_ts).as_secs_f64();
-        t_complete[i] = t_i;
         t_fit.push(t_i);
         v_fit.push(seq.dx[i] as f64 / dt_c);
     }
@@ -130,13 +131,12 @@ pub(crate) fn fit_dx(
         }
         dx_fit[i] = dx_round as i32;
     }
+    debug_plot.add_fit(seq, &dt_complete, &t_complete, &fit, &dx_fit);
 
     let v0 = fit[0];
     let a = fit[1];
     let t_last = *t_fit.last().expect("at least one non-zero dx");
     let ds = (v0 * t_last + 0.5 * a * t_last * t_last).abs();
-
-    debug_plot.add_fit(seq, dt_complete, t_complete, fit, &dx_fit);
 
     Ok(FitDx { dx_fit, ds, v0, a })
 }
@@ -151,14 +151,7 @@ mod debug_plot {
         pub(crate) fn new(_: &Sequence) -> DebugPlot {
             DebugPlot {}
         }
-        pub(crate) fn add_fit(
-            &mut self,
-            _: &Sequence,
-            _: Vec<f64>,
-            _: Vec<f64>,
-            _: Vec<f64>,
-            _: &Vec<i32>,
-        ) {
+        pub(crate) fn add_fit(&mut self, _: &Sequence, _: &[f64], _: &[f64], _: &[f64], _: &[i32]) {
         }
     }
 }
@@ -189,8 +182,8 @@ mod debug_plot {
                         .duration_since(first_ts)
                         .as_secs_f64()
                         .ceil(),
-                    f64::from(*seq.dx.iter().min().unwrap())
-                        ..f64::from(*seq.dx.iter().max().unwrap()),
+                    f64::from(*seq.dx.iter().min().unwrap()) - 2.0
+                        ..f64::from(*seq.dx.iter().max().unwrap()) + 2.0,
                 )
                 .unwrap();
 
@@ -212,10 +205,10 @@ mod debug_plot {
         pub(crate) fn add_fit(
             &mut self,
             seq: &Sequence,
-            dt_complete: Vec<f64>,
-            t_complete: Vec<f64>,
-            fit: Vec<f64>,
-            dx_fit: &Vec<i32>,
+            dt_complete: &[f64],
+            t_complete: &[f64],
+            fit: &[f64],
+            dx_fit: &[i32],
         ) {
             // fit function
             self.ctx
